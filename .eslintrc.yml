@@ -1,0 +1,19 @@
+root: true
+
+extends:
+  - 'eslint:recommended'
+
+parserOptions:
+  ecmaVersion: 2020
+  sourceType: module
+  requireConfigFile: false
+
+env:
+  es2020: true
+  node: true
+  browser: true
+
+rules:
+  no-unreachable: 2
+# Add your preferred rules here, or use the configuration from CSV plugin
+# https://github.com/tropy/tropy-plugin-csv/blob/master/.eslintrc.yml

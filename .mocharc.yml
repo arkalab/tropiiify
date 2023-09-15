@@ -1,0 +1,3 @@
+color: true
+recursive: true
+reporter: dot

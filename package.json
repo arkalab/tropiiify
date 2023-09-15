@@ -1,0 +1,54 @@
+{
+  "name": "tropy-plugin-example",
+  "productName": "Example Plugin",
+  "version": "1.0.0-beta.1",
+  "description": "A Tropy plugin for doing something!",
+  "icon": "icon.svg",
+  "main": "index.js",
+  "scripts": {
+    "test": "electron-mocha --renderer test",
+    "lint": "eslint --color src test",
+    "build": "rollup -c rollup.config.js",
+    "watch": "rollup -c -w rollup.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tropy/tropy-plugin-example.git"
+  },
+  "keywords": [
+    "tropy",
+    "plugin"
+  ],
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/tropy/tropy-plugin-example/issues"
+  },
+  "homepage": "https://github.com/tropy/tropy-plugin-example#readme",
+  "hooks": {
+    "export": true,
+    "import": true
+  },
+  "options": [
+    {
+      "field": "clipboard",
+      "label": "Example: Copy exported data to clipboard?",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "field": "file",
+      "type": "save-file",
+      "label": "Example: Save export as"
+    }
+  ],
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "electron": "^18.2.2",
+    "electron-mocha": "^11.0.2",
+    "eslint": "^8.14.0",
+    "rollup": "^2.72.1",
+    "rollup-plugin-license": "^2.7.0"
+  },
+  "dependencies": {}
+}
