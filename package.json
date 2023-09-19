@@ -1,15 +1,15 @@
 {
   "name": "tropy-plugin-example",
-  "productName": "Example Plugin",
-  "version": "1.0.0-beta.1",
-  "description": "A Tropy plugin for doing something!",
+  "productName": "Export IIIF",
+  "version": "0.1.0",
+  "description": "A Tropy plugin for exporting IIIF manifests and collections",
   "icon": "icon.svg",
   "main": "index.js",
   "scripts": {
     "test": "electron-mocha --renderer test",
     "lint": "eslint --color src test",
     "build": "rollup -c rollup.config.js",
-    "watch": "rollup -c -w rollup.config.js"
+    "watch": "rollup -c -w rollup.config.mjs"
   },
   "repository": {
     "type": "git",
@@ -30,19 +30,44 @@
   },
   "options": [
     {
-      "field": "clipboard",
-      "label": "Example: Copy exported data to clipboard?",
-      "type": "boolean",
-      "default": false
+      "field": "collectionName",
+      "label": "Collection Name",
+      "default": "My IIIF Collection",
+      "placeholder": "My IIIF Collection",
+      "hint": "The label to use in the exported collection",
+      "required": true
     },
     {
-      "field": "file",
-      "type": "save-file",
-      "label": "Example: Save export as"
+      "field": "baseId",
+      "label": "IIIF base id",
+      "default": "http://localhost:8887/",
+      "placeholder": "http://localhost:8887/",
+      "hint": "The URL prefix to use in the exported manifests and collections. This should be a publicly accessible web location"
+    },
+    {
+      "field": "requiredStatement",
+      "label": "Required Statement",
+      "default": "Attribution",
+      "hint": "The label to use for the manifests Required Statement section"
+    },
+    {
+      "field": "itemTemplate",
+      "label": "Item template",
+      "placeholder": "Select Template (Optional)",
+      "type": "template",
+      "hint": "The template determines how to export the IIIF manifest metadata section"
+    },
+    {
+      "field": "photoTemplate",
+      "label": "Photo template",
+      "placeholder": "Select Template (Optional)",
+      "type": "template",
+      "hint": "The template determines how to export the IIIF manifest metadata section"
     }
   ],
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "electron": "^18.2.2",
     "electron-mocha": "^11.0.2",
@@ -50,5 +75,7 @@
     "rollup": "^2.72.1",
     "rollup-plugin-license": "^2.7.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "iiif-builder": "^1.0.6"
+  }
 }
