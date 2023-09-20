@@ -40,7 +40,7 @@ class ExamplePlugin {
     // Here we write directly to Tropy's log file (via the context object)
     this.context.logger.trace('Called export hook from example plugin')
 
-    //const destination = await this.prompt()
+    const destination = await this.prompt()
 
     // This logs the data supplied to the export hook. The data includes
     // the currently selected Tropy items (or all items, if none are currently
@@ -50,26 +50,28 @@ class ExamplePlugin {
     let manifests = []
     //const zip = new JSZip();
 
-    // for (let item of expanded[0]['@graph']) {
-    //   try {
-    //     const manifest = this.createManifest(item)
-    //     //console.log('Manifest:', await manifest)
-    //     const jsonData = JSON.stringify(manifest, null, 4)
-    //     //writeFile(path.join(destination[0,'manifest.json'), jsonData)
+    for (let item of expanded[0]['@graph']) {
+      try {
+        const manifest = this.createManifest(item)
+        //console.log('Manifest:', await manifest)
+        const manifestJson = JSON.stringify(await manifest, null, 4)
+        writeFile(path.join(destination[0],'manifest.json'), manifestJson)
 
     //     manifests.push(manifest)
     //     //zip.file(`${manifest.id}.json`, manifest)
-    //   } catch (e) {
-    //     console.log(e.stack)
+      } catch (e) {
+        console.log(e.stack)
     //     // this.context.logger.warn(
     //     //   {
     //     //     stack: e.stack
     //     //   },
     //     //   `failed to export IIIF manifest ${item}`
     //     // )
-    //   }
-    // }
+      }
+    }
     const collection = this.createCollection(expanded[0]['@graph']) //manifests
+    const collectionJson = JSON.stringify(await collection, null, 4)
+    writeFile(path.join(destination[0],'collection.json'), collectionJson)
     console.log('Collection:', await collection)
     //zip.file(`${this.options.collectionName}`, collection)
   }
@@ -78,7 +80,7 @@ class ExamplePlugin {
     let itemTemplate = this.loadTemplate(this.options.itemTemplate)
     let photoTemplate = this.loadTemplate(this.options.photoTemplate)
 
-    const props = {
+    const props = { //Should be in a class to reuse in createCollection
       identifier: item['http://purl.org/dc/terms/identifier']?.[0]['@value'],
       title: item['http://purl.org/dc/terms/title']?.[0]['@value'],
       description: item['http://purl.org/dc/terms/description']?.[0]['@value'],
@@ -111,12 +113,12 @@ class ExamplePlugin {
 
   async createCollection(manifests) {
     const collection = builder.createCollection(
-      this.options.baseId + '/collection/' + this.options.collectionName.toLowerCase().replace(' ', '_'),
+      this.options.baseId + 'collection/' + this.options.collectionName.toLowerCase().replace(' ', '_'),
       async collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of manifests) {
           
-          // Emprestado de createManifest
+          // Should be in a class
           const props = {
             identifier: item['http://purl.org/dc/terms/identifier']?.[0]['@value'],
             title: item['http://purl.org/dc/terms/title']?.[0]['@value'],
@@ -130,27 +132,9 @@ class ExamplePlugin {
           //
 
           collection.createManifest(id, (manifest) => {
-            //manifest.addLabel(manifest.label['none'][0])
             manifest.addLabel(props.title);
-            props.description && manifest.addSummary(props.description)
-            props.rights && manifest.setRights(props.rights);
-            props.source && manifest.setRequiredStatement({
-              label: this.options.requiredStatementLabel,
-              value: this.options.requiredStatementText + ` ${props.source}`
-            })
-            //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
-            //provider?
-            let itemTemplate = this.loadTemplate(this.options.itemTemplate)
-            this.fillMetadata(itemTemplate, item, manifest)
-
           })
         }
-        // manifests.map(manifest => {
-        //   console.log(manifest)
-        //   collection.createManifest(manifest.id, (manifest) => {
-        //     manifest.addLabel(manifest.label)
-        //   })
-        // })
       })
     return collection
   }
@@ -223,11 +207,12 @@ class ExamplePlugin {
 }
 
 ExamplePlugin.defaults = {
-  itemTemplate: '',
+  itemTemplate: 'Export IIIF',
   photoTemplate: '',
   collectionName: 'My IIIF Collection',
   requiredStatementLabel: 'Attribution',
   requiredStatementText: 'Provided by',
+  baseId: 'http://localhost:8887/',
 }
 
 // The plugin must be the module's default export.

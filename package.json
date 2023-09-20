@@ -45,24 +45,31 @@
       "hint": "The URL prefix to use in the exported manifests and collections. This should be a publicly accessible web location"
     },
     {
-      "field": "requiredStatement",
-      "label": "Required Statement",
+      "field": "requiredStatementLabel",
+      "label": "Required Statement Label",
       "default": "Attribution",
       "hint": "The label to use for the manifests Required Statement section"
     },
     {
+      "field": "requiredStatementText",
+      "label": "Required Statement Text",
+      "default": "Provided by",
+      "placeholder": "Provided by",
+      "hint": "Text to prepend to the 'source' property value"
+    },
+    {
       "field": "itemTemplate",
       "label": "Item template",
-      "placeholder": "Select Template (Optional)",
+      "placeholder": "Select Template",
       "type": "template",
-      "hint": "The template determines how to export the IIIF manifest metadata section"
+      "hint": "The template determines how to export the IIIF manifest"
     },
     {
       "field": "photoTemplate",
       "label": "Photo template",
-      "placeholder": "Select Template (Optional)",
+      "placeholder": "Select Template",
       "type": "template",
-      "hint": "The template determines how to export the IIIF manifest metadata section"
+      "hint": "The template determines how to export the IIIF manifest"
     }
   ],
   "devDependencies": {
