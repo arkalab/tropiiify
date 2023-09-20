@@ -1,8 +1,8 @@
 {
-  "name": "tropy-plugin-example",
-  "productName": "Export IIIF",
+  "name": "tropy-iiif-builder",
+  "productName": "Tropy IIIF Builder",
   "version": "0.1.0",
-  "description": "A Tropy plugin for exporting IIIF manifests and collections",
+  "description": "A Tropy plugin for exporting IIIF collections",
   "icon": "icon.svg",
   "main": "index.js",
   "scripts": {
@@ -26,7 +26,7 @@
   "homepage": "https://github.com/tropy/tropy-plugin-example#readme",
   "hooks": {
     "export": true,
-    "import": true
+    "import": false
   },
   "options": [
     {
