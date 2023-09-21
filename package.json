@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tropy/tropy-plugin-example.git"
+    "url": "git+https://github.com/martimpassos/tropy-iiif-builder.git"
   },
   "keywords": [
     "tropy",
@@ -21,9 +21,9 @@
   ],
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/tropy/tropy-plugin-example/issues"
+    "url": "https://github.com/martimpassos/tropy-iiif-builder/issues"
   },
-  "homepage": "https://github.com/tropy/tropy-plugin-example#readme",
+  "homepage": "https://github.com/martimpassos/tropy-iiif-builder#readme",
   "hooks": {
     "export": true,
     "import": false

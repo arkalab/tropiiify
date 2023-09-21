@@ -1,7 +1,6 @@
 <p align="center"><img src="icon.svg"></p>
 
 <h1 align="center">tropy-iiif-builder</h1>
-This package is IIIF export plugin for [Tropy](https://tropy.org).
 
 ## Installation
 
@@ -11,25 +10,28 @@ This package is IIIF export plugin for [Tropy](https://tropy.org).
 - In Tropy, navigate to _Preferences… > Plugins_ and click _Install
   Plugin_ to select the downloaded ZIP file.
 
-## Configuration
+## Usage
+
+Select the items you want to add to your IIIF collection (or none if you want 
+to include all items) and select File > Import > tropy-iiif-builder.
+You will be prompted to select a destination folder where the exported files will be saved. The plugin will then create IIIF manifests for each Tropy item, create a collection with all manifests, and tile the images so they can be zoomed in efficiently.
+
+## Creating export templates
+
+If present, the plugin maps some specific metadata properties to specific IIIF properties. These are:
+- `dcterms:identifier` extends the `Base URL` configuration to form the manifests and collection [id](https://iiif.io/api/presentation/3.0/#id).
+ - `dcterms:rights` goes to [rights](https://iiif.io/api/presentation/3.0/#rights). This should be a CC or Rights Statements URI.
+ - `dcterms:description` goes to [summary](https://iiif.io/api/presentation/3.0/#summary)
+ - `dcterms:source` extends the `Required statement text` configuration to form the [required statement](https://iiif.io/api/presentation/3.0/#requiredstatement) together with the `Required statement label` configuration.
+ - `exif:gpsLatitude` and `exif:gpsLongitude` together form each manifest's [navPlace](https://iiif.io/api/extension/navplace/) property. Polygons are currently not supported.
+
+## Plugin configuration
 
 To configure the plugin, click its _Settings_ button in _Preferences > Plugins_:
 
-The example plugin has two configuration options, to demonstrate a file
-selector and a boolean option. They have no effect on the plugin
-functionality, but their values should be logged to the console when the plugin
-constructor is called.
-
-## Usage
-
-The example plugin implements the _import_ and _export_ hooks. Both hooks just
-log the arguments they are called with to the console.
-
-To see the plugin in action, enable _Developer mode_ in the preferences and
-then, back in the project window toggle the developer tools from the developer
-menu. When you reload the window, you will see the arguments logged by plugin's
-constructor (for each plugin instance you configured). To trigger any of the
-hooks, just select the respective entries in the import and export sub-menus.
+ - Choose a plugin Name that will show up in the File > Import menu (e.g. IIIF Manifest).
+ - Use the + icon at the far right to create new plugin instances (so you can have multiple configurations in parallel).
+ - The Item template selector lets you pick a custom export template (see above).
 
 ## Developing and debugging
 
