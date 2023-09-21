@@ -22,8 +22,10 @@ If present, the plugin maps some specific metadata properties to specific IIIF p
 - `dcterms:identifier` extends the `Base URL` configuration to form the manifests and collection [id](https://iiif.io/api/presentation/3.0/#id).
  - `dcterms:rights` goes to [rights](https://iiif.io/api/presentation/3.0/#rights). This should be a CC or Rights Statements URI.
  - `dcterms:description` goes to [summary](https://iiif.io/api/presentation/3.0/#summary)
- - `dcterms:source` extends the `Required statement text` configuration to form the [required statement](https://iiif.io/api/presentation/3.0/#requiredstatement) together with the `Required statement label` configuration.
+ - `dcterms:source` extends the `required statement text` configuration to form the [required statement](https://iiif.io/api/presentation/3.0/#requiredstatement) together with the `required statement label` configuration.
  - `exif:gpsLatitude` and `exif:gpsLongitude` together form each manifest's [navPlace](https://iiif.io/api/extension/navplace/) property. Polygons are currently not supported.
+
+ All other properties are sent to [metadata](https://iiif.io/api/presentation/3.0/#metadata) with their corresponding labels.
 
 ## Plugin configuration
 
