@@ -1,7 +1,8 @@
 'use strict'
 
 const { IIIFBuilder } = require('iiif-builder');
-const builder = new IIIFBuilder();
+const manifestBuilder = new IIIFBuilder();
+const collectionBuilder = new IIIFBuilder();
 const { writeFile } = require('fs/promises')
 const path = require('path');
 
@@ -52,7 +53,7 @@ class TropyIIIFBuilderPlugin {
         const manifest = this.createManifest(item)
         //console.log('Manifest:', await manifest)
         const manifestJson = JSON.stringify(await manifest, null, 4)
-        writeFile(path.join(destination[0],'manifest.json'), manifestJson)
+        writeFile(path.join(destination[0]/*,item.id*/,'manifest.json'), manifestJson)
       } catch (e) {
         console.log(e.stack)
     //     // this.context.logger.warn(
@@ -87,7 +88,7 @@ class TropyIIIFBuilderPlugin {
 
     const id = this.options.baseId + props.identifier + '/manifest.json'
 
-    const newManifest = builder.createManifest(
+    const normalizedManifest = manifestBuilder.createManifest(
       id,
       manifest => {
         manifest.addLabel(props.title);
@@ -101,15 +102,13 @@ class TropyIIIFBuilderPlugin {
         this.fillMetadata(itemTemplate, item, manifest)
       }
     )
-    console.log('normalized:', newManifest)
-
-    return builder.toPresentation3({ id: newManifest.id, type: 'Manifest' });
+    return manifestBuilder.toPresentation3({ id: normalizedManifest.id, type: 'Manifest' });
   }
 
-  async createCollection(manifests) {
-    const collection = builder.createCollection(
-      this.options.baseId + 'collection/' + sanitizeString(this.options.collectionName),
-      async collection => {
+  createCollection(manifests) {
+    const collection = collectionBuilder.createCollection(
+      this.options.baseId + 'collection/' + this.sanitizeString(this.options.collectionName),
+      collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of manifests) {
           
@@ -126,14 +125,14 @@ class TropyIIIFBuilderPlugin {
           })
         }
       })
-    return collection
+    return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
   }
 
   fillMetadata(template, item, manifest) {
     // to-do: send only remaining metadata
     let iMap = this.mapLabelsToIds(template)
     for (let { label } of template.fields) {
-      if (item[iMap[label]]&&!props.label) {
+      if (item[iMap[label]]) {
         manifest.addMetadata(this.toTitleCase(label), item[iMap[label]][0]?.['@value']);
       }
     }
@@ -146,7 +145,7 @@ class TropyIIIFBuilderPlugin {
   }
 
   sanitizeString(str) {
-    return str.toLowerCase().replace(' ', '_')
+    return str.replaceAll(' ', '_').toLowerCase()
   }
 
   mapLabelsToIds(template) {
@@ -199,7 +198,7 @@ TropyIIIFBuilderPlugin.defaults = {
   collectionName: 'My IIIF Collection',
   requiredStatementLabel: 'Attribution',
   requiredStatementText: 'Provided by',
-  baseId: 'http://localhost:8887/',
+  baseId: 'http://localhost:8887/iiif/',
 }
 
 // The plugin must be the module's default export.
