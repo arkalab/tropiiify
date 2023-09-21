@@ -34,7 +34,7 @@
       "label": "Collection Name",
       "default": "My IIIF Collection",
       "placeholder": "My IIIF Collection",
-      "hint": "The label to use in the exported collection",
+      "hint": "The exported collection's label",
       "required": true
     },
     {

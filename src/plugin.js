@@ -4,6 +4,7 @@ const { IIIFBuilder } = require('iiif-builder');
 const manifestBuilder = new IIIFBuilder();
 const collectionBuilder = new IIIFBuilder();
 const { writeFile } = require('fs/promises')
+const { Resource } = require('./resource')
 const path = require('path');
 
 // A Tropy plugin is a regular Node.js module. Because of the way the plugin
@@ -38,20 +39,17 @@ class TropyIIIFBuilderPlugin {
   async export(data) {
     // Here we write directly to Tropy's log file (via the context object)
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
-
     const destination = await this.prompt()
 
     // This logs the data supplied to the export hook. The data includes
     // the currently selected Tropy items (or all items, if none are currently
     // selected and you triggered the export via the menu).
     const expanded = await this.context.json.expand(data)
-
-    //const zip = new JSZip();
-
-    for (let item of expanded[0]['@graph']) {
+    const items = expanded[0]['@graph'].map((item) => new Resource(item))
+    for (let item of items) {
       try {
         const manifest = this.createManifest(item)
-        //console.log('Manifest:', await manifest)
+        console.log('Manifest:', await manifest)
         const manifestJson = JSON.stringify(await manifest, null, 4)
         writeFile(path.join(destination[0]/*,item.id*/,'manifest.json'), manifestJson)
       } catch (e) {
@@ -65,7 +63,7 @@ class TropyIIIFBuilderPlugin {
       }
     }
 
-    const collection = this.createCollection(expanded[0]['@graph']) //manifests
+    const collection = this.createCollection(items) 
     const collectionJson = JSON.stringify(await collection, null, 4)
     writeFile(path.join(destination[0],'collection.json'), collectionJson)
     console.log('Collection:', await collection)
@@ -76,27 +74,17 @@ class TropyIIIFBuilderPlugin {
     let itemTemplate = this.loadTemplate(this.options.itemTemplate)
     let photoTemplate = this.loadTemplate(this.options.photoTemplate)
 
-    const props = { //Should be in a class to reuse in createCollection
-      identifier: item['http://purl.org/dc/terms/identifier']?.[0]['@value'],
-      title: item['http://purl.org/dc/terms/title']?.[0]['@value'],
-      description: item['http://purl.org/dc/terms/description']?.[0]['@value'],
-      rights: item['http://purl.org/dc/terms/rights']?.[0]['@value'],
-      source: item['http://purl.org/dc/terms/source']?.[0]['@value'],
-      latitude: item['http://www.w3.org/2003/12/exif/ns#gpsLatitude']?.[0]['@value'],
-      longitude: item['http://www.w3.org/2003/12/exif/ns#gpsLongitude']?.[0]['@value'],
-    };
-
-    const id = this.options.baseId + props.identifier + '/manifest.json'
+    const id = this.options.baseId + item.identifier + '/manifest.json'
 
     const normalizedManifest = manifestBuilder.createManifest(
       id,
       manifest => {
-        manifest.addLabel(props.title);
-        props.description && manifest.addSummary(props.description)
-        props.rights && manifest.setRights(props.rights);
-        props.source && manifest.setRequiredStatement({
+        manifest.addLabel(item.title);
+        item.description && manifest.addSummary(item.description)
+        item.rights && manifest.setRights(item.rights);
+        item.source && manifest.setRequiredStatement({
           label: this.options.requiredStatementLabel,
-          value: this.options.requiredStatementText + ` ${props.source}`
+          value: this.options.requiredStatementText + ` ${item.source}`
         })
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         this.fillMetadata(itemTemplate, item, manifest)
@@ -105,23 +93,15 @@ class TropyIIIFBuilderPlugin {
     return manifestBuilder.toPresentation3({ id: normalizedManifest.id, type: 'Manifest' });
   }
 
-  createCollection(manifests) {
+  createCollection(items) {
     const collection = collectionBuilder.createCollection(
       this.options.baseId + 'collection/' + this.sanitizeString(this.options.collectionName),
       collection => {
         collection.addLabel(this.options.collectionName)
-        for (let item of manifests) {
-          
-          // Should be in a class
-          const props = {
-            identifier: item['http://purl.org/dc/terms/identifier']?.[0]['@value'],
-            title: item['http://purl.org/dc/terms/title']?.[0]['@value']
-          };
-          
-          const id = this.options.baseId + props.identifier + '/manifest.json'
-
+        for (let item of items) {
+          const id = this.options.baseId + item.identifier + '/manifest.json'
           collection.createManifest(id, (manifest) => {
-            manifest.addLabel(props.title);
+            manifest.addLabel(item.title);
           })
         }
       })
@@ -129,11 +109,11 @@ class TropyIIIFBuilderPlugin {
   }
 
   fillMetadata(template, item, manifest) {
-    // to-do: send only remaining metadata
     let iMap = this.mapLabelsToIds(template)
     for (let { label } of template.fields) {
-      if (item[iMap[label]]) {
-        manifest.addMetadata(this.toTitleCase(label), item[iMap[label]][0]?.['@value']);
+      const value = item['data'][iMap[label]]
+      if (value && !item[label.toLowerCase()]) { //only write metadata that is not a Resource property
+        manifest.addMetadata(this.toTitleCase(label), value[0]?.['@value']);
       }
     }
   }
@@ -149,8 +129,6 @@ class TropyIIIFBuilderPlugin {
   }
 
   mapLabelsToIds(template) {
-    // if (!template)
-    //   return LABELS
     let map = {}
     for (let { label, property } of template.fields) {
       if (label) map[label] = property
