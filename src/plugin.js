@@ -6,6 +6,8 @@ const collectionBuilder = new IIIFBuilder();
 const { writeFile } = require('fs/promises')
 const { Resource } = require('./resource')
 const path = require('path');
+const fs = require('fs');
+
 
 // A Tropy plugin is a regular Node.js module. Because of the way the plugin
 // is loaded into Tropy this has to be a CommonJS module. You can use `require`
@@ -37,57 +39,80 @@ class TropyIIIFBuilderPlugin {
 
   // This method gets called when the export hook is triggered.
   async export(data) {
+    console.log('Raw export:', data)
     // Here we write directly to Tropy's log file (via the context object)
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
-    const destination = await this.prompt()
+
+    let destination = await this.prompt()
+    destination = path.join(destination[0], 'iiif')
+    this.createDirectory(destination)
 
     // This logs the data supplied to the export hook. The data includes
     // the currently selected Tropy items (or all items, if none are currently
     // selected and you triggered the export via the menu).
     const expanded = await this.context.json.expand(data)
-    const items = expanded[0]['@graph'].map((item) => new Resource(item))
+    console.log("Expanded data:", expanded)
+    const iMap = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
+    const items = expanded[0]['@graph'].map((item) => new Resource(item, iMap))
     for (let item of items) {
       try {
         const manifest = this.createManifest(item)
         console.log('Manifest:', await manifest)
         const manifestJson = JSON.stringify(await manifest, null, 4)
-        writeFile(path.join(destination[0]/*,item.id*/,'manifest.json'), manifestJson)
+        const manifestPath = path.join(destination, this.sanitizeString(item.id))
+        this.createDirectory(manifestPath)
+        writeFile(
+          path.join(
+            manifestPath,
+            'manifest.json'
+          ),
+          manifestJson)
       } catch (e) {
         console.log(e.stack)
-    //     // this.context.logger.warn(
-    //     //   {
-    //     //     stack: e.stack
-    //     //   },
-    //     //   `failed to export IIIF manifest ${item}`
-    //     // )
+        //     // this.context.logger.warn(
+        //     //   {
+        //     //     stack: e.stack
+        //     //   },
+        //     //   `failed to export IIIF manifest ${item}`
+        //     // )
       }
     }
 
-    const collection = this.createCollection(items) 
+    const collection = this.createCollection(items)
     const collectionJson = JSON.stringify(await collection, null, 4)
-    writeFile(path.join(destination[0],'collection.json'), collectionJson)
+    const collectionPath = path.join(destination, 'collection')
+    this.createDirectory(collectionPath)
+    writeFile(
+      path.join(
+        collectionPath,
+        'collection.json'
+      ),
+      collectionJson)
     console.log('Collection:', await collection)
     //zip.file(`${this.options.collectionName}`, collection)
   }
 
   async createManifest(item) {
-    let itemTemplate = this.loadTemplate(this.options.itemTemplate)
-    let photoTemplate = this.loadTemplate(this.options.photoTemplate)
+    //let itemTemplate = this.loadTemplate(this.options.itemTemplate)
+    //let photoTemplate = this.loadTemplate(this.options.photoTemplate)
 
-    const id = this.options.baseId + item.identifier + '/manifest.json'
+    const id = this.options.baseId + item.id + '/manifest.json'
 
     const normalizedManifest = manifestBuilder.createManifest(
       id,
       manifest => {
-        manifest.addLabel(item.title);
-        item.description && manifest.addSummary(item.description)
+        manifest.addLabel(item.label);
+        item.summary && manifest.addSummary(item.summary)
         item.rights && manifest.setRights(item.rights);
-        item.source && manifest.setRequiredStatement({
+        item.requiredstatementValue && manifest.setRequiredStatement({
           label: this.options.requiredStatementLabel,
-          value: this.options.requiredStatementText + ` ${item.source}`
+          value: `${this.options.requiredStatementText || ''} ${item.requiredstatementValue}`.trim()
         })
+        manifest.setHomepage({ id: item.homepageValue, type: 'Text', label: { "none": [item.homepageLabel] }, format: 'text/html' })
+        //manifest.addSeeAlso()
+        //manifest.addThumbnail()
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
-        this.fillMetadata(itemTemplate, item, manifest)
+        this.fillMetadata(item, manifest)
       }
     )
     return manifestBuilder.toPresentation3({ id: normalizedManifest.id, type: 'Manifest' });
@@ -99,7 +124,7 @@ class TropyIIIFBuilderPlugin {
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of items) {
-          const id = this.options.baseId + item.identifier + '/manifest.json'
+          const id = this.options.baseId + item.id + '/manifest.json'
           collection.createManifest(id, (manifest) => {
             manifest.addLabel(item.title);
           })
@@ -108,13 +133,29 @@ class TropyIIIFBuilderPlugin {
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
   }
 
-  fillMetadata(template, item, manifest) {
-    let iMap = this.mapLabelsToIds(template)
-    for (let { label } of template.fields) {
-      const value = item['data'][iMap[label]]
-      if (value && !item[label.toLowerCase()]) { //only write metadata that is not a Resource property
-        manifest.addMetadata(this.toTitleCase(label), value[0]?.['@value']);
+  fillMetadata(item, manifest) {
+    for (let property in item) {
+      if (property.startsWith('metadata')) {
+        manifest.addMetadata(property.replace('metadata', ''), item[property])
       }
+    }
+    // for (let { label } of template.fields) {
+    //   const value = item['data'][iMap[label]]
+    //   if (value && !item[label.toLowerCase()]) { //only write metadata that is not a Resource property
+    //     manifest.addMetadata(this.toTitleCase(label), value[0]?.['@value']);
+    //   }
+    // }
+  }
+
+  createDirectory(path) {
+    if (!fs.existsSync(path)) {
+      fs.mkdir(path, (err) => {
+        if (err) {
+          console.error(`Error creating directory: ${err}`);
+        } else {
+          console.log(`Directory "${path}" created successfully.`);
+        }
+      });
     }
   }
 
@@ -131,10 +172,20 @@ class TropyIIIFBuilderPlugin {
   mapLabelsToIds(template) {
     let map = {}
     for (let { label, property } of template.fields) {
-      if (label) map[label] = property
+      label
+        .split('|')
+        .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
+        .map((label) => map[label] = property)
+      //'metadata:Source|homepage:label|provider:homepage:label' =>
+      //['metadata:Source', 'homepage:label', 'provider:homepage:label'] =>
+      //[
+      //  ['metadataSource'], ['homepageLabel'], ['providerHomepageLabel]
+      //]
     }
     return map
   }
+
+
 
   loadTemplate(id) {
     return this.context.window.store?.getState().ontology.template[id]
@@ -171,11 +222,12 @@ class TropyIIIFBuilderPlugin {
 }
 
 TropyIIIFBuilderPlugin.defaults = {
-  itemTemplate: 'Export IIIF',
+  itemTemplate: 'Export IIIF 2',
   photoTemplate: '',
   collectionName: 'My IIIF Collection',
+  homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
-  requiredStatementText: 'Provided by',
+  //requiredStatementText: 'Provided by',
   baseId: 'http://localhost:8887/iiif/',
 }
 
