@@ -108,7 +108,12 @@ class TropyIIIFBuilderPlugin {
           label: this.options.requiredStatementLabel,
           value: `${this.options.requiredStatementText || ''} ${item.requiredstatementValue}`.trim()
         })
-        manifest.setHomepage({ id: item.homepageValue, type: 'Text', label: { "none": [item.homepageLabel] }, format: 'text/html' })
+        manifest.setHomepage({
+          id: item.homepageValue,
+          type: 'Text',
+          label: { "none": [this.options.homepageLabel] },
+          format: 'text/html'
+        })
         //manifest.addSeeAlso()
         //manifest.addThumbnail()
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
@@ -227,7 +232,7 @@ TropyIIIFBuilderPlugin.defaults = {
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
-  //requiredStatementText: 'Provided by',
+  requiredStatementText: 'Provided by',
   baseId: 'http://localhost:8887/iiif/',
 }
 
