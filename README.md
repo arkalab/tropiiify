@@ -31,7 +31,7 @@ To configure how your IIIF manifests will be created, you will need to define a 
 
 - `homepage:id`: manifest [homepage](https://iiif.io/api/presentation/3.0/#homepage). The `homepage` label is set through the plugin options (i.e "Object's homepage").
 
-- `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`.
+- `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`. Format the values as `Link text [link URL]` if you want them to be links (i.e `Example [example.org]` becomes [Example](example.org))
 
 You can also use the same value in multiple places using the '|' separator. So, if you want `dcterms:rightsHolder` to be both the value for `requiredStatement` and a `metadata` entry, you can map it to `requiredstatement:value|metadata:Provider`. Or maybe you want `dcterms:date` to be `metadata:Date` and also the [navDate](https://iiif.io/api/presentation/3.0/#navdate) property? Label it as `metadata:Date|navdate` and the plugin will try to parse it to an ISO date.
 
