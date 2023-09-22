@@ -111,7 +111,7 @@ class TropyIIIFBuilderPlugin {
         for (let item of items) {
           const id = this.options.baseId + item.id + '/manifest.json'
           collection.createManifest(id, (manifest) => {
-            manifest.addLabel(item.title);
+            manifest.addLabel(item.label);
           })
         }
       })
@@ -120,7 +120,7 @@ class TropyIIIFBuilderPlugin {
 
   fillMetadata(item, manifest) {
     for (let property in item) {
-      if (property.startsWith('metadata')) {
+      if (property.startsWith('metadata') && item.property) {
         manifest.addMetadata(
           property.replace('metadata', ''),
           item.assembleHTML(property)
