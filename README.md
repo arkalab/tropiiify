@@ -26,14 +26,13 @@ To configure how your IIIF manifests will be created, you will need to define a 
 - `label`: manifest [label](https://iiif.io/api/presentation/3.0/#)
 - `summary`: manifest [summary](https://iiif.io/api/presentation/3.0/#)
 - `rights`: manifest [rights](https://iiif.io/api/presentation/3.0/#rights)
-
 - `requiredstatement:value`: manifest [requiredstatement](https://iiif.io/api/presentation/3.0/#requiredStatement). In the plugin options you can control the label and boilerplate text, so "Musee du Louvre" becomes "Attribution": "Provided by Musee du Louvre" in the manifest.
-
 - `homepage:id`: manifest [homepage](https://iiif.io/api/presentation/3.0/#homepage). The `homepage` label is set through the plugin options (i.e "Object's homepage").
-
 - `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`. Format the values as `Link text [link URL]` if you want them to be links (i.e `Example [example.org]` becomes [Example](example.org))
+- `navplace:latitude` and `navplace:longitude`: manifest [navPlace](https://iiif.io/api/extension/navplace/). These will tipically be `exif:gpsLatitude` and `exif:gpsLongitude` but hey, we're not judging
+- `navdate`: manifest [navDate](https://iiif.io/api/presentation/3.0/#navdate). The plugin will attempt to parse the value to ISO format, so try to keep the property values neatly formatted.
 
-You can also use the same value in multiple places using the '|' separator. So, if you want `dcterms:rightsHolder` to be both the value for `requiredStatement` and a `metadata` entry, you can map it to `requiredstatement:value|metadata:Provider`. Or maybe you want `dcterms:date` to be `metadata:Date` and also the [navDate](https://iiif.io/api/presentation/3.0/#navdate) property? Label it as `metadata:Date|navdate` and the plugin will try to parse it to an ISO date.
+You can also use the same value in multiple places using the '|' separator. So, if you want `dcterms:rightsHolder` to be both the value for `requiredStatement` and a `metadata` entry, you can label it as `requiredstatement:value|metadata:Provider`. Or maybe you want `dcterms:date` to be `metadata:Date` and also the navDate property? Label it as `metadata:Date|navdate`.
 
 Don't want to have to deal with this? We also provide a standard template mapping commonly used properties (mostly `dcterms` and a few `exif`). You can set up your project from scratch to use these or migrate your data using Tropy's CSV plugin.
 
