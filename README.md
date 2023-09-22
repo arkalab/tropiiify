@@ -35,6 +35,7 @@ To configure how your IIIF manifests will be created, you will need to define a 
 
 You can also use the same value in multiple places using the '|' separator. So, if you want `dcterms:rightsHolder` to be both the value for `requiredStatement` and a `metadata` entry, you can map it to `requiredstatement:value|metadata:Provider`. Or maybe you want `dcterms:date` to be `metadata:Date` and also the [navDate](https://iiif.io/api/presentation/3.0/#navdate) property? Label it as `metadata:Date|navdate` and the plugin will try to parse it to an ISO date.
 
+Don't want to have to deal with this? We also provide a standard template mapping commonly used properties (mostly `dcterms` and a few `exif`). You can set up your project from scratch to use these or migrate your data using Tropy's CSV plugin.
 
 ## Plugin configuration
 
