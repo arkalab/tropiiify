@@ -3,8 +3,8 @@
 const { IIIFBuilder } = require('iiif-builder');
 const manifestBuilder = new IIIFBuilder();
 const collectionBuilder = new IIIFBuilder();
-const { writeFile } = require('fs/promises')
-const { Resource } = require('./resource')
+const { writeFile, copyFile } = require('fs/promises')
+const { Resource, createDirectory } = require('./resource')
 const path = require('path');
 const fs = require('fs');
 
@@ -26,28 +26,33 @@ class TropyIIIFBuilderPlugin {
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
 
     // Prompt user to select output directory
-    let destination = await this.prompt()
-    destination = path.join(destination[0], 'iiif')
-    this.createDirectory(destination)
+    let output = await this.prompt()
+    output = path.join(output[0], 'iiif')
+    createDirectory(output)
 
     const expanded = await this.context.json.expand(data)
     console.log("Expanded data:", expanded)
 
     // Map property URIs to template labels (that should be named according to the convention)
-    const iMap = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    const items = expanded[0]['@graph'].map((item) => new Resource(item, iMap))
+    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
+    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.context.json))
 
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
-        const manifest = this.createManifest(item)
+        const manifest = item.createManifest(this.options)
         console.log('Manifest:', await manifest)
         const manifestJson = JSON.stringify(await manifest, null, 4)
-        const manifestPath = path.join(destination, this.sanitizeString(item.id))
-        this.createDirectory(manifestPath)
+        const itemPath = path.join(output, this.sanitizeString(item.id))
+        createDirectory(itemPath)
+        item.photo.map((photo) => {
+          const dir = path.join(itemPath, photo.checksum)
+          createDirectory(dir);
+          copyFile(photo.path, path.join(dir, photo.checksum + path.extname(photo.path))) //full/max/0/default?
+        });
         writeFile(
           path.join(
-            manifestPath,
+            itemPath,
             'manifest.json'
           ),
           manifestJson)
@@ -65,8 +70,8 @@ class TropyIIIFBuilderPlugin {
     // Create collection from same source data and write file
     const collection = this.createCollection(items)
     const collectionJson = JSON.stringify(await collection, null, 4)
-    const collectionPath = path.join(destination, 'collection')
-    this.createDirectory(collectionPath)
+    const collectionPath = path.join(output, 'collection')
+    createDirectory(collectionPath)
     writeFile(
       path.join(
         collectionPath,
@@ -74,33 +79,6 @@ class TropyIIIFBuilderPlugin {
       ),
       collectionJson)
     console.log('Collection:', await collection)
-  }
-
-  async createManifest(item) {
-    const id = this.options.baseId + item.id + '/manifest.json'
-    const normalizedManifest = manifestBuilder.createManifest(
-      id,
-      manifest => {
-        manifest.addLabel(item.label);
-        item.summary && manifest.addSummary(item.summary)
-        item.rights && manifest.setRights(item.rights);
-        item.requiredstatementValue && manifest.setRequiredStatement({
-          label: this.options.requiredStatementLabel,
-          value: `${this.options.requiredStatementText} ${item.requiredstatementValue}`.trim() //Remove eventual leading whitespace
-        })
-        manifest.setHomepage({
-          id: item.homepageValue,
-          type: 'Text',
-          label: { "none": [this.options.homepageLabel] }, //Falls back to default
-          format: 'text/html'
-        })
-        //manifest.addSeeAlso()
-        //manifest.addThumbnail()
-        //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
-        this.fillMetadata(item, manifest) //assigns all item.metadata{{Label}} props      
-      }
-    )
-    return manifestBuilder.toPresentation3({ id: normalizedManifest.id, type: 'Manifest' });
   }
 
   createCollection(items) {
@@ -116,29 +94,6 @@ class TropyIIIFBuilderPlugin {
         }
       })
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
-  }
-
-  fillMetadata(item, manifest) {
-    for (let property in item) {
-      if (property.startsWith('metadata') && item.property) {
-        manifest.addMetadata(
-          property.replace('metadata', ''),
-          item.assembleHTML(property)
-        )
-      }
-    }
-  }
-
-  createDirectory(path) {
-    if (!fs.existsSync(path)) {
-      fs.mkdir(path, (err) => {
-        if (err) {
-          console.error(`Error creating directory: ${err}`);
-        } else {
-          console.log(`Directory "${path}" created successfully.`);
-        }
-      });
-    }
   }
 
   sanitizeString(str) {
@@ -169,7 +124,7 @@ class TropyIIIFBuilderPlugin {
 
 TropyIIIFBuilderPlugin.defaults = {
   itemTemplate: 'Export IIIF 2',
-  photoTemplate: '',
+  photoTemplate: 'Tropy Photo',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
