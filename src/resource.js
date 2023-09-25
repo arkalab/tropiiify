@@ -88,7 +88,7 @@ class Resource {
 
   fillMetadata(manifest) {
     for (let property in this) {
-      if (property.startsWith('metadata')) {
+      if (property.startsWith('metadata') && this[property]) {
         manifest.addMetadata(
           property.replace('metadata', ''),
           this.assembleHTML(property)
