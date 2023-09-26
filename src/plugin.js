@@ -26,36 +26,26 @@ class TropyIIIFBuilderPlugin {
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
 
     // Prompt user to select output directory
-    let output = await this.prompt()
-    output = path.join(output[0], 'iiif')
-    createDirectory(output)
+    this.options['output'] = await this.prompt()
+    //const output = await this.prompt()
+    // output = path.join(output[0], 'iiif')
+    // this.options['output'] = output
+    // createDirectory(output)
 
     const expanded = await this.context.json.expand(data)
     console.log("Expanded data:", expanded)
 
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.context.json))
+    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.options))
 
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
-        const manifest = item.createManifest(this.options)
-        console.log('Manifest:', await manifest)
-        const manifestJson = JSON.stringify(await manifest, null, 4)
-        const itemPath = path.join(output, this.sanitizeString(item.id))
-        createDirectory(itemPath)
-        item.photo.map((photo) => {
-          const dir = path.join(itemPath, photo.checksum)
-          createDirectory(dir);
-          copyFile(photo.path, path.join(dir, photo.checksum + path.extname(photo.path))) //full/max/0/default?
-        });
-        writeFile(
-          path.join(
-            itemPath,
-            'manifest.json'
-          ),
-          manifestJson)
+        const manifestPath = path.join(item.path, 'manifest.json')
+        this.writeJson(manifestPath, await item.createManifest())
+        this.copyImages(item) 
+        //console.log('Manifest:', await manifest)
       } catch (e) {
         console.log(e.stack)
         //     // this.context.logger.warn(
@@ -68,22 +58,15 @@ class TropyIIIFBuilderPlugin {
     }
 
     // Create collection from same source data and write file
-    const collection = this.createCollection(items)
-    const collectionJson = JSON.stringify(await collection, null, 4)
-    const collectionPath = path.join(output, 'collection')
-    createDirectory(collectionPath)
-    writeFile(
-      path.join(
-        collectionPath,
-        'collection.json'
-      ),
-      collectionJson)
-    console.log('Collection:', await collection)
+    //const collection =  this.createCollection(items)//class?
+    const collectionPath = path.join(this.options.output, 'collection', 'collection.json')
+    this.writeJson(collectionPath, this.createCollection(items))
+    //console.log('Collection:', await collection)
   }
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      this.options.baseId + 'collection/' + this.sanitizeString(this.options.collectionName), //lowercase and no whitespace (forbid #, etc?)
+      this.options.baseId + 'collection/' + Resource.sanitizeString(this.options.collectionName), //lowercase and no whitespace (forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of items) {
@@ -96,9 +79,9 @@ class TropyIIIFBuilderPlugin {
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
   }
 
-  sanitizeString(str) {
-    return str.replaceAll(' ', '_').toLowerCase()
-  }
+  // sanitizeString(str) {
+  //   return str.replaceAll(' ', '_').toLowerCase()
+  // }
 
   mapLabelsToIds(template) {
     let map = {}
@@ -115,10 +98,41 @@ class TropyIIIFBuilderPlugin {
     return this.context.window.store?.getState().ontology.template[id]
   }
 
-  prompt() {
-    return this.context.dialog.open({
+  writeJson(objPath, obj) {
+    const jsonData = JSON.stringify(obj, null, 4)
+    this.createDirectory(path.dirname(objPath))
+    writeFile(objPath, jsonData)
+    return null
+  }
+
+  createDirectory(path) {
+    if (!fs.existsSync(path)) {
+      fs.mkdir(path, { recursive: true }, (err) => {
+        if (err) {
+          console.error(`Error creating directory: ${err}`);
+        } else {
+          console.log(`Directory "${path}" created successfully.`);
+        }
+      });
+    }
+  }
+
+  copyImages(item) {
+    item.photo.map((photo) => {
+      const dest = path.join(item.path, photo.checksum, (photo.checksum + path.extname(photo.path)))
+      this.createDirectory(path.dirname(dest))
+      copyFile(photo.path, dest) //full/max/0/default?
+    })
+  };
+
+  async prompt() {
+    let output = await this.context.dialog.open({
       properties: ['openDirectory']
     })
+    output = path.join(output[0], 'iiif')
+    //this.options['output'] = output
+    this.createDirectory(output)
+    return output
   }
 }
 
