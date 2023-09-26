@@ -1,10 +1,9 @@
 'use strict'
 
 const { IIIFBuilder } = require('iiif-builder');
-const manifestBuilder = new IIIFBuilder();
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFile } = require('fs/promises')
-const { Resource, createDirectory } = require('./resource')
+const { copyFile } = require('fs/promises')
+const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
 
@@ -98,14 +97,14 @@ class TropyIIIFBuilderPlugin {
     return this.context.window.store?.getState().ontology.template[id]
   }
 
-  writeJson(objPath, obj) {
+  async writeJson(objPath, obj) {
     const jsonData = JSON.stringify(obj, null, 4)
-    this.createDirectory(path.dirname(objPath))
-    writeFile(objPath, jsonData)
+    await this.createDirectory(path.dirname(objPath))
+    this.context.json.write(objPath, jsonData)
     return null
   }
 
-  createDirectory(path) {
+  async createDirectory(path) {
     if (!fs.existsSync(path)) {
       fs.mkdir(path, { recursive: true }, (err) => {
         if (err) {
@@ -118,9 +117,9 @@ class TropyIIIFBuilderPlugin {
   }
 
   copyImages(item) {
-    item.photo.map((photo) => {
+    item.photo.map(async (photo) => {
       const dest = path.join(item.path, photo.checksum, (photo.checksum + path.extname(photo.path)))
-      this.createDirectory(path.dirname(dest))
+      await this.createDirectory(path.dirname(dest))
       copyFile(photo.path, dest) //full/max/0/default?
     })
   };
