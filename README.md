@@ -25,7 +25,7 @@ To configure how your IIIF manifests will be created, you will need to define a 
 - `id`: manifest [id](https://iiif.io/api/presentation/3.0/#id)
 - `label`: manifest [label](https://iiif.io/api/presentation/3.0/#)
 - `summary`: manifest [summary](https://iiif.io/api/presentation/3.0/#)
-- `rights`: manifest [rights](https://iiif.io/api/presentation/3.0/#rights)
+- `rights`: manifest [rights](https://iiif.io/api/presentation/3.0/#rights). As per the IIIF specification "the value must be drawn from the set of Creative Commons license URIs, the RightsStatements.org rights statement URIs, or those added via the extension mechanism".
 - `requiredstatement:value`: manifest [requiredstatement](https://iiif.io/api/presentation/3.0/#requiredStatement). In the plugin options you can control the label and boilerplate text, so "Musee du Louvre" becomes "Attribution": "Provided by Musee du Louvre" in the manifest.
 - `homepage:id`: manifest [homepage](https://iiif.io/api/presentation/3.0/#homepage). The `homepage` label is set through the plugin options (i.e "Object's homepage").
 - `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`. Format the values as `Link text [link URL]` if you want them to be links (i.e `Example [https://example.org]` becomes [Example](example.org))
