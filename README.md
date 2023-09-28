@@ -20,7 +20,7 @@ You will be prompted to select a destination folder where the exported files wil
 
 >“Standards are like toothbrushes, a good idea but no one wants to use anyone elses” - Anita Golderba
 
-To configure how your IIIF manifests will be created, you will need to define a export template mapping the metadata properties you're using to IIIF properties. This is done by labeling your properties with the following naming convention:
+To configure how your IIIF manifests will be created, you will need to define a export template mapping the metadata properties you're using to IIIF properties. This is done by labeling your properties according to the following naming convention:
 
 - `id`: manifest [id](https://iiif.io/api/presentation/3.0/#id)
 - `label`: manifest [label](https://iiif.io/api/presentation/3.0/#)
