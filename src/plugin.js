@@ -2,7 +2,7 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { copyFile } = require('fs/promises')
+const { writeFile, copyFile } = require('fs/promises')
 const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
@@ -26,10 +26,6 @@ class TropyIIIFBuilderPlugin {
 
     // Prompt user to select output directory
     this.options['output'] = await this.prompt()
-    //const output = await this.prompt()
-    // output = path.join(output[0], 'iiif')
-    // this.options['output'] = output
-    // createDirectory(output)
 
     const expanded = await this.context.json.expand(data)
     console.log("Expanded data:", expanded)
@@ -43,7 +39,8 @@ class TropyIIIFBuilderPlugin {
       try {
         const manifestPath = path.join(item.path, 'manifest.json')
         this.writeJson(manifestPath, await item.createManifest())
-        this.copyImages(item) 
+        this.copyImages(item)
+        this.tileImages(item)
         //console.log('Manifest:', await manifest)
       } catch (e) {
         console.log(e.stack)
@@ -57,7 +54,6 @@ class TropyIIIFBuilderPlugin {
     }
 
     // Create collection from same source data and write file
-    //const collection =  this.createCollection(items)//class?
     const collectionPath = path.join(this.options.output, 'collection', 'collection.json')
     this.writeJson(collectionPath, this.createCollection(items))
     //console.log('Collection:', await collection)
@@ -78,10 +74,6 @@ class TropyIIIFBuilderPlugin {
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
   }
 
-  // sanitizeString(str) {
-  //   return str.replaceAll(' ', '_').toLowerCase()
-  // }
-
   mapLabelsToIds(template) {
     let map = {}
     for (let { label, property } of template.fields) {
@@ -100,13 +92,13 @@ class TropyIIIFBuilderPlugin {
   async writeJson(objPath, obj) {
     const jsonData = JSON.stringify(obj, null, 4)
     await this.createDirectory(path.dirname(objPath))
-    this.context.json.write(objPath, jsonData)
+    writeFile(objPath, jsonData)
     return null
   }
 
   async createDirectory(path) {
     if (!fs.existsSync(path)) {
-      fs.mkdir(path, { recursive: true }, (err) => {
+      await fs.mkdir(path, { recursive: true }, (err) => {
         if (err) {
           console.error(`Error creating directory: ${err}`);
         } else {
@@ -118,10 +110,29 @@ class TropyIIIFBuilderPlugin {
 
   copyImages(item) {
     item.photo.map(async (photo) => {
-      const dest = path.join(item.path, photo.checksum, (photo.checksum + path.extname(photo.path)))
+      const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`)
       await this.createDirectory(path.dirname(dest))
-      copyFile(photo.path, dest) //full/max/0/default?
+      await copyFile(photo.path, dest)
     })
+  };
+
+  tileImages(item) {
+    try {
+      item.photo.map(async (photo) => {
+        const tilesPath = path.join(item.path, photo.checksum)
+        const sharp = await this.context.sharp.open(photo.path, {
+          limitInputPixels: true,
+        })
+        sharp
+          .tile({
+            layout: 'iiif3',
+            id: item.baseId
+          })
+          .toFile(tilesPath)
+      })
+    } catch {
+      warn('warning')
+    }
   };
 
   async prompt() {
@@ -129,7 +140,6 @@ class TropyIIIFBuilderPlugin {
       properties: ['openDirectory']
     })
     output = path.join(output[0], 'iiif')
-    //this.options['output'] = output
     this.createDirectory(output)
     return output
   }
