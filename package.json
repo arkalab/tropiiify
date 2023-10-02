@@ -45,12 +45,6 @@
       "hint": "The URL prefix to use in the exported manifests and collections. This should be a publicly accessible web location"
     },
     {
-      "field": "homepageLabel",
-      "label": "Homepage Label",
-      "default": "Object homepage",
-      "hint": "The label to use for the manifests Required Statement section"
-    },
-    {
       "field": "requiredStatementLabel",
       "label": "Required Statement Label",
       "default": "Attribution",
