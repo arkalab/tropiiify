@@ -64,6 +64,11 @@ class Resource {
           label: { "none": [this.options.homepageLabel] }, //Falls back to default
           format: 'text/html'
         })
+<<<<<<< HEAD
+=======
+        //manifest.addSeeAlso()
+        //manifest.addThumbnail()
+>>>>>>> a4c4fb9b5d59937b4f6e3a8584b9afae353f0435
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({ id: new URL('/square/600,/0/default.jpg', this.baseId).toString(), type: 'Image', format: 'image/jpeg' });
         this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  

@@ -20,15 +20,15 @@ You will be prompted to select a destination folder where the exported files wil
 
 >“Standards are like toothbrushes, a good idea but no one wants to use anyone elses” - Anita Golderba
 
-To configure how your IIIF manifests will be created, you will need to define a export template mapping the metadata properties you're using to IIIF properties. This is done by labeling your properties with the following naming convention:
+To configure how your IIIF manifests will be created, you will need to define a export template mapping the metadata properties you're using to IIIF properties. This is done by labeling your properties according to the following naming convention:
 
 - `id`: manifest [id](https://iiif.io/api/presentation/3.0/#id)
 - `label`: manifest [label](https://iiif.io/api/presentation/3.0/#)
 - `summary`: manifest [summary](https://iiif.io/api/presentation/3.0/#)
-- `rights`: manifest [rights](https://iiif.io/api/presentation/3.0/#rights)
+- `rights`: manifest [rights](https://iiif.io/api/presentation/3.0/#rights). As per the IIIF specification "the value must be drawn from the set of Creative Commons license URIs, the RightsStatements.org rights statement URIs, or those added via the extension mechanism".
 - `requiredstatement:value`: manifest [requiredstatement](https://iiif.io/api/presentation/3.0/#requiredStatement). In the plugin options you can control the label and boilerplate text, so "Musee du Louvre" becomes "Attribution": "Provided by Musee du Louvre" in the manifest.
 - `homepage:id`: manifest [homepage](https://iiif.io/api/presentation/3.0/#homepage). The `homepage` label is set through the plugin options (i.e "Object's homepage").
-- `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`. Format the values as `Link text [link URL]` if you want them to be links (i.e `Example [example.org]` becomes [Example](example.org))
+- `metadata:{label}` will send the mapped property value to the manifest [metadata](https://iiif.io/api/presentation/3.0/#metadata) section with the provided `{label}`. For example, label `dcterms:creator` as `metadata:Creator` to add a "Creator" entry in the resulting manifest `metadata`. Format the values as `Link text [link URL]` if you want them to be links (i.e `Example [https://example.org]` becomes [Example](example.org))
 - `navplace:latitude` and `navplace:longitude`: manifest [navPlace](https://iiif.io/api/extension/navplace/). These will tipically be `exif:gpsLatitude` and `exif:gpsLongitude` but hey, we're not judging
 - `navdate`: manifest [navDate](https://iiif.io/api/presentation/3.0/#navdate). The plugin will attempt to parse the value to ISO format, so try to keep the property values neatly formatted.
 
