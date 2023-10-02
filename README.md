@@ -1,6 +1,6 @@
 <p align="center"><img src="icon.svg"></p>
 
-<h1 align="center">tropy-iiif-builder</h1>
+<h1 align="center">tropiiify</h1>
 
 ## Installation
 
