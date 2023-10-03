@@ -2,10 +2,9 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFile } = require('fs')
+const { writeFile, copyFileSync, existsSync, mkdirSync, unlink } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
-const fs = require('fs');
 
 
 class TropiiifyPlugin {
@@ -101,8 +100,8 @@ class TropiiifyPlugin {
 
   createDirectory(path) {
     try {
-      if (!fs.existsSync(path)) {
-        fs.mkdirSync(path, { recursive: true });
+      if (!existsSync(path)) {
+        mkdirSync(path, { recursive: true });
         console.log(`Directory "${path}" created successfully.`);
       }
     } catch (err) {
@@ -114,7 +113,7 @@ class TropiiifyPlugin {
     item.photo.forEach((photo) => {
       const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`);
       this.createDirectory(path.dirname(dest));
-      fs.copyFileSync(photo.path, dest);
+      copyFileSync(photo.path, dest);
     });
   }
 
@@ -137,7 +136,7 @@ class TropiiifyPlugin {
       this.context.logger.trace(`Failed image tile ${item.id}`)
     }
 
-    fs.unlink(path.join(item.path,'vips-properties.xml'), (err) => {
+    unlink(path.join(item.path,'vips-properties.xml'), (err) => {
       if (err) {
         console.error(`Error deleting file: ${err}`);
       } else {
