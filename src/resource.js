@@ -49,7 +49,7 @@ class Resource {
 
   async createManifest() {
     const normalizedManifest = manifestBuilder.createManifest(
-      `${this.baseId}/manifest.json`,
+      `${Resource.sanitizeString(this.baseId)}/manifest.json`,
       manifest => {
         manifest.addLabel(this.label);
         this.summary && manifest.addSummary(this.summary)
