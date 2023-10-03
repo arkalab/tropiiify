@@ -1,137 +1,86 @@
 'use strict'
 
 const { IIIFBuilder } = require('iiif-builder');
-const manifestBuilder = new IIIFBuilder();
 const collectionBuilder = new IIIFBuilder();
-const { writeFile } = require('fs/promises')
+const { writeFile, copyFile } = require('fs/promises')
 const { Resource } = require('./resource')
 const path = require('path');
+const fs = require('fs');
 
-// A Tropy plugin is a regular Node.js module. Because of the way the plugin
-// is loaded into Tropy this has to be a CommonJS module. You can use `require`
-// to access the Node.js and Electron APIs or any files bundled with your plugin.
 
 class TropyIIIFBuilderPlugin {
 
-  // A Tropy plugin is JavaScript class/constructor function. An instance will be
-  // created at start-up in each project window for each set of `options` configured
-  // in the plugin section of Tropy's preferences window.
   constructor(options, context) {
 
-    // It is good practice to define a default configuration to use as a fallback
-    // in case some options are left blank.
     this.options = Object.assign({}, TropyIIIFBuilderPlugin.defaults, options)
-
-    // The plugin instance receives a `context` object from Tropy. Typically,
-    // you will store a reference here, so that you can use it later when a
-    // hook is triggered.
     this.context = context
 
-    // The sample plugin just prints the constructor arguments to the console
-    // for instructional purposes. You can see it in Tropy if you reload the
-    // project window while the DevTools are open.
     console.log('Constructed example plugin with options and context:')
     console.log(this.options)
     console.log(this.context)
   }
 
-  // This method gets called when the export hook is triggered.
   async export(data) {
-    // Here we write directly to Tropy's log file (via the context object)
+    console.log('Raw export:', data)
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
-    const destination = await this.prompt()
 
-    // This logs the data supplied to the export hook. The data includes
-    // the currently selected Tropy items (or all items, if none are currently
-    // selected and you triggered the export via the menu).
+    // Prompt user to select output directory
+    this.options['output'] = await this.prompt()
+
     const expanded = await this.context.json.expand(data)
-    const items = expanded[0]['@graph'].map((item) => new Resource(item))
+    console.log("Expanded data:", expanded)
+
+    // Map property URIs to template labels (that should be named according to the convention)
+    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
+    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.options))
+
+    // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
-        const manifest = this.createManifest(item)
-        console.log('Manifest:', await manifest)
-        const manifestJson = JSON.stringify(await manifest, null, 4)
-        writeFile(path.join(destination[0]/*,item.id*/,'manifest.json'), manifestJson)
+        const manifestPath = path.join(item.path, 'manifest.json')
+        this.writeJson(manifestPath, await item.createManifest())
+        this.copyImages(item)
+        this.tileImages(item)
+        //console.log('Manifest:', await manifest)
       } catch (e) {
         console.log(e.stack)
-    //     // this.context.logger.warn(
-    //     //   {
-    //     //     stack: e.stack
-    //     //   },
-    //     //   `failed to export IIIF manifest ${item}`
-    //     // )
+        //     // this.context.logger.warn(
+        //     //   {
+        //     //     stack: e.stack
+        //     //   },
+        //     //   `failed to export IIIF manifest ${item}`
+        //     // )
       }
     }
 
-    const collection = this.createCollection(items) 
-    const collectionJson = JSON.stringify(await collection, null, 4)
-    writeFile(path.join(destination[0],'collection.json'), collectionJson)
-    console.log('Collection:', await collection)
-    //zip.file(`${this.options.collectionName}`, collection)
-  }
-
-  async createManifest(item) {
-    let itemTemplate = this.loadTemplate(this.options.itemTemplate)
-    let photoTemplate = this.loadTemplate(this.options.photoTemplate)
-
-    const id = this.options.baseId + item.identifier + '/manifest.json'
-
-    const normalizedManifest = manifestBuilder.createManifest(
-      id,
-      manifest => {
-        manifest.addLabel(item.title);
-        item.description && manifest.addSummary(item.description)
-        item.rights && manifest.setRights(item.rights);
-        item.source && manifest.setRequiredStatement({
-          label: this.options.requiredStatementLabel,
-          value: this.options.requiredStatementText + ` ${item.source}`
-        })
-        //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
-        this.fillMetadata(itemTemplate, item, manifest)
-      }
-    )
-    return manifestBuilder.toPresentation3({ id: normalizedManifest.id, type: 'Manifest' });
+    // Create collection from same source data and write file
+    const collectionPath = path.join(this.options.output, 'collection', 'collection.json')
+    this.writeJson(collectionPath, this.createCollection(items))
+    //console.log('Collection:', await collection)
   }
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      this.options.baseId + 'collection/' + this.sanitizeString(this.options.collectionName),
+      this.options.baseId + 'collection/' + Resource.sanitizeString(this.options.collectionName), //lowercase and no whitespace (forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of items) {
-          const id = this.options.baseId + item.identifier + '/manifest.json'
+          const id = this.options.baseId + item.id + '/manifest.json'
           collection.createManifest(id, (manifest) => {
-            manifest.addLabel(item.title);
+            manifest.addLabel(item.label);
           })
         }
       })
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
   }
 
-  fillMetadata(template, item, manifest) {
-    let iMap = this.mapLabelsToIds(template)
-    for (let { label } of template.fields) {
-      const value = item['data'][iMap[label]]
-      if (value && !item[label.toLowerCase()]) { //only write metadata that is not a Resource property
-        manifest.addMetadata(this.toTitleCase(label), value[0]?.['@value']);
-      }
-    }
-  }
-
-  toTitleCase(str) {
-    return str.toLowerCase().split(' ').map(function (word) {
-      return (word.charAt(0).toUpperCase() + word.slice(1));
-    }).join(' ');
-  }
-
-  sanitizeString(str) {
-    return str.replaceAll(' ', '_').toLowerCase()
-  }
-
   mapLabelsToIds(template) {
     let map = {}
     for (let { label, property } of template.fields) {
-      if (label) map[label] = property
+      label
+        .split('|')
+        .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
+        .map((label) => map[label] = property)
     }
     return map
   }
@@ -140,44 +89,70 @@ class TropyIIIFBuilderPlugin {
     return this.context.window.store?.getState().ontology.template[id]
   }
 
-  prompt() {
-    return this.context.dialog.open({
-      properties: ['openDirectory']
-    })
+  async writeJson(objPath, obj) {
+    const jsonData = JSON.stringify(obj, null, 4)
+    await this.createDirectory(path.dirname(objPath))
+    writeFile(objPath, jsonData)
+    return null
   }
 
-  /* This method gets called when the import hook is triggered.
-  async import(payload) {
-    this.logger.trace('Called import hook from example plugin')
+  async createDirectory(path) {
+    if (!fs.existsSync(path)) {
+      await fs.mkdir(path, { recursive: true }, (err) => {
+        if (err) {
+          console.error(`Error creating directory: ${err}`);
+        } else {
+          console.log(`Directory "${path}" created successfully.`);
+        }
+      });
+    }
+  }
 
-    // This logs the payload received by the import hook. After this method
-    // completes, Tropy's import command will continue its work with this
-    // payload.
-    console.log(payload)
+  copyImages(item) {
+    item.photo.map(async (photo) => {
+      const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`)
+      await this.createDirectory(path.dirname(dest))
+      await copyFile(photo.path, dest)
+    })
+  };
 
-    // After this method completes, Tropy's import command will continue its
-    // work with this payload. To have Tropy import JSON-LD data, you can
-    // add it here:
-    payload.data = [
-      // Add your items here!
-    ]
+  tileImages(item) {
+    try {
+      item.photo.map(async (photo) => {
+        const tilesPath = path.join(item.path, photo.checksum)
+        const sharp = await this.context.sharp.open(photo.path, {
+          limitInputPixels: true,
+        })
+        sharp
+          .tile({
+            layout: 'iiif3',
+            id: item.baseId
+          })
+          .toFile(tilesPath)
+      })
+    } catch {
+      warn('warning')
+    }
+  };
 
-    // Alternatively, to import a list of supported local files or remote
-    // URLs you can add the respective arrays instead:
-    //
-    // payload.files = []
-    // payload.urls = []
-  }*/
+  async prompt() {
+    let output = await this.context.dialog.open({
+      properties: ['openDirectory']
+    })
+    output = path.join(output[0], 'iiif')
+    this.createDirectory(output)
+    return output
+  }
 }
 
 TropyIIIFBuilderPlugin.defaults = {
-  itemTemplate: 'Export IIIF',
-  photoTemplate: '',
+  itemTemplate: 'Export IIIF 2',
+  photoTemplate: 'Tropy Photo',
   collectionName: 'My IIIF Collection',
+  homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
   requiredStatementText: 'Provided by',
   baseId: 'http://localhost:8887/iiif/',
 }
 
-// The plugin must be the module's default export.
 module.exports = TropyIIIFBuilderPlugin
