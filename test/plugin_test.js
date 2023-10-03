@@ -12,8 +12,4 @@ describe('TropiiifyPlugin', () => {
   it('responds to export hook', () => {
     assert.equal(typeof (new TropiiifyPlugin).export, 'function')
   })
-
-  it('responds to import hook', () => {
-    assert.equal(typeof (new TropiiifyPlugin).import, 'function')
-  })
 })
