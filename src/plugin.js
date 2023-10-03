@@ -56,6 +56,7 @@ class TropiiifyPlugin {
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
     //console.log('Collection:', await collection)
+    this.complete()
   }
 
   createCollection(items) {
@@ -90,8 +91,11 @@ class TropiiifyPlugin {
 
   async writeJson(objPath, obj) {
     const jsonData = JSON.stringify(obj, null, 4)
-    await this.createDirectory(path.dirname(objPath))
-    writeFile(objPath, jsonData)
+    this.createDirectory(path.dirname(objPath))
+    writeFile(objPath, jsonData, (err) => {
+      if (err) throw err;
+      console.log('The file has been saved!');
+    })
     return null
   }
 
@@ -114,30 +118,32 @@ class TropiiifyPlugin {
     });
   }
 
-  tileImages(item) {
+  async tileImages(item) {
     try {
-      item.photo.map(async (photo) => {
+      for (const photo of item.photo) {
         const tilesPath = path.join(item.path, photo.checksum)
         const sharp = await this.context.sharp.open(photo.path, {
           limitInputPixels: true,
         })
-        sharp
+
+        await sharp
           .tile({
             layout: 'iiif3',
             id: item.baseId
           })
           .toFile(tilesPath)
-          fs.unlink(path.join(item.path,'vips-properties.xml'), (err) => {
-            if (err) {
-              console.error(`Error deleting file: ${err}`);
-            } else {
-              console.log(`Deleted vips-properties successfully.`);
-            }
-          });
-      })
+      }
     } catch {
       this.context.logger.trace(`Failed image tile ${item.id}`)
     }
+
+    fs.unlink(path.join(item.path,'vips-properties.xml'), (err) => {
+      if (err) {
+        console.error(`Error deleting file: ${err}`);
+      } else {
+        console.log(`Deleted vips-properties successfully.`);
+      }
+    })
   }
 
   async prompt() {
@@ -148,7 +154,15 @@ class TropiiifyPlugin {
     this.createDirectory(output)
     return output
   }
+
+  async complete() {
+    await this.context.dialog.notify('export.complete', {
+      message: 'Export complete!',
+      type: 'info'
+    })
+  }
 }
+  
 
 TropiiifyPlugin.defaults = {
   itemTemplate: 'Export IIIF 2',
