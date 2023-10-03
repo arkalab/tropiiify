@@ -1,6 +1,6 @@
 {
-  "name": "tropy-iiif-builder",
-  "productName": "Tropy IIIF Builder",
+  "name": "tropiiify",
+  "productName": "tropiiify",
   "version": "0.1.0",
   "description": "A Tropy plugin for exporting IIIF collections",
   "icon": "icon.svg",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/martimpassos/tropy-iiif-builder.git"
+    "url": "git+https://github.com/martimpassos/tropiiify.git"
   },
   "keywords": [
     "tropy",
@@ -21,9 +21,9 @@
   ],
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/martimpassos/tropy-iiif-builder/issues"
+    "url": "https://github.com/martimpassos/tropiiify/issues"
   },
-  "homepage": "https://github.com/martimpassos/tropy-iiif-builder#readme",
+  "homepage": "https://github.com/martimpassos/tropiiify#readme",
   "hooks": {
     "export": true,
     "import": false

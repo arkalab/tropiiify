@@ -8,11 +8,11 @@ const path = require('path');
 const fs = require('fs');
 
 
-class TropyIIIFBuilderPlugin {
+class TropiiifyPlugin {
 
   constructor(options, context) {
 
-    this.options = Object.assign({}, TropyIIIFBuilderPlugin.defaults, options)
+    this.options = Object.assign({}, TropiiifyPlugin.defaults, options)
     this.context = context
 
     console.log('Constructed example plugin with options and context:')
@@ -114,7 +114,7 @@ class TropyIIIFBuilderPlugin {
       await this.createDirectory(path.dirname(dest))
       await copyFile(photo.path, dest)
     })
-  };
+  }
 
   tileImages(item) {
     try {
@@ -131,9 +131,9 @@ class TropyIIIFBuilderPlugin {
           .toFile(tilesPath)
       })
     } catch {
-      warn('warning')
+      this.context.logger.trace(`Failed image tile ${item.id}`)
     }
-  };
+  }
 
   async prompt() {
     let output = await this.context.dialog.open({
@@ -145,7 +145,7 @@ class TropyIIIFBuilderPlugin {
   }
 }
 
-TropyIIIFBuilderPlugin.defaults = {
+TropiiifyPlugin.defaults = {
   itemTemplate: 'Export IIIF 2',
   photoTemplate: 'Tropy Photo',
   collectionName: 'My IIIF Collection',
@@ -155,4 +155,4 @@ TropyIIIFBuilderPlugin.defaults = {
   baseId: 'http://localhost:8887/iiif/',
 }
 
-module.exports = TropyIIIFBuilderPlugin
+module.exports = TropiiifyPlugin
