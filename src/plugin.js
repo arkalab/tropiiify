@@ -2,7 +2,7 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFile } = require('fs/promises')
+const { writeFile, copyFile } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
@@ -52,9 +52,8 @@ class TropiiifyPlugin {
         //     // )
       }
     }
-
     // Create collection from same source data and write file
-    const collectionPath = path.join(this.options.output, 'collection', 'collection.json')
+    const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
     //console.log('Collection:', await collection)
   }
@@ -96,24 +95,23 @@ class TropiiifyPlugin {
     return null
   }
 
-  async createDirectory(path) {
-    if (!fs.existsSync(path)) {
-      await fs.mkdir(path, { recursive: true }, (err) => {
-        if (err) {
-          console.error(`Error creating directory: ${err}`);
-        } else {
-          console.log(`Directory "${path}" created successfully.`);
-        }
-      });
+  createDirectory(path) {
+    try {
+      if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+        console.log(`Directory "${path}" created successfully.`);
+      }
+    } catch (err) {
+      console.error(`Error creating directory: ${err}`);
     }
   }
 
   copyImages(item) {
-    item.photo.map(async (photo) => {
-      const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`)
-      await this.createDirectory(path.dirname(dest))
-      await copyFile(photo.path, dest)
-    })
+    item.photo.forEach((photo) => {
+      const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`);
+      this.createDirectory(path.dirname(dest));
+      fs.copyFileSync(photo.path, dest);
+    });
   }
 
   tileImages(item) {
@@ -129,6 +127,13 @@ class TropiiifyPlugin {
             id: item.baseId
           })
           .toFile(tilesPath)
+          fs.unlink(path.join(item.path,'vips-properties.xml'), (err) => {
+            if (err) {
+              console.error(`Error deleting file: ${err}`);
+            } else {
+              console.log(`Deleted vips-properties successfully.`);
+            }
+          });
       })
     } catch {
       this.context.logger.trace(`Failed image tile ${item.id}`)
@@ -147,7 +152,6 @@ class TropiiifyPlugin {
 
 TropiiifyPlugin.defaults = {
   itemTemplate: 'Export IIIF 2',
-  photoTemplate: 'Tropy Photo',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
