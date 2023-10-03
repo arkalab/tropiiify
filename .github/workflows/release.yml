@@ -5,7 +5,7 @@ on:
       - v*.*
 
 env:
-  PLUGIN_NAME: tropy-iiif-builder
+  PLUGIN_NAME: tropiiify
 
 jobs:
   create-release:
