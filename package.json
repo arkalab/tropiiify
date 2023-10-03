@@ -63,13 +63,6 @@
       "placeholder": "Select Template",
       "type": "template",
       "hint": "The template determines how to export the IIIF manifest"
-    },
-    {
-      "field": "photoTemplate",
-      "label": "Photo template",
-      "placeholder": "Select Template",
-      "type": "template",
-      "hint": "The template determines how to export the IIIF manifest"
     }
   ],
   "devDependencies": {
