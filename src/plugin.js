@@ -2,9 +2,10 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFileSync, existsSync, mkdirSync, unlink } = require('fs')
+const { writeFile, copyFile } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
+const fs = require('fs');
 
 
 class TropiiifyPlugin {
@@ -32,35 +33,26 @@ class TropiiifyPlugin {
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
     const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.options))
-
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
         const manifestPath = path.join(item.path, 'manifest.json')
         this.writeJson(manifestPath, await item.createManifest())
-        this.copyImages(item)
-        this.tileImages(item)
+        await this.handleImages(item)
         //console.log('Manifest:', await manifest)
       } catch (e) {
         console.log(e.stack)
-        //     // this.context.logger.warn(
-        //     //   {
-        //     //     stack: e.stack
-        //     //   },
-        //     //   `failed to export IIIF manifest ${item}`
-        //     // )
       }
     }
     // Create collection from same source data and write file
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
-    //console.log('Collection:', await collection)
     this.complete()
   }
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      this.options.baseId + 'collection/' + Resource.sanitizeString(this.options.collectionName), //lowercase and no whitespace (forbid #, etc?)
+      this.options.baseId + 'index.json', //lowercase and no whitespace (forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let item of items) {
@@ -100,8 +92,8 @@ class TropiiifyPlugin {
 
   createDirectory(path) {
     try {
-      if (!existsSync(path)) {
-        mkdirSync(path, { recursive: true });
+      if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
         console.log(`Directory "${path}" created successfully.`);
       }
     } catch (err) {
@@ -109,40 +101,33 @@ class TropiiifyPlugin {
     }
   }
 
-  copyImages(item) {
-    item.photo.forEach((photo) => {
-      const dest = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path)}`);
-      this.createDirectory(path.dirname(dest));
-      copyFileSync(photo.path, dest);
+  handleImages(item) {
+    const imageProcessingPromises = item.photo.map(async photo => {
+      const fullPath = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path) || '.jpg'}`);
+      const thumbPath = path.join(item.path, photo.checksum, 'full', '!300,300', '0', `default${path.extname(photo.path) || '.jpg'}`)
+      const tilesPath = path.join(item.path, photo.checksum)
+
+      this.createDirectory(path.dirname(thumbPath))
+      this.createDirectory(path.dirname(fullPath));
+
+      const sharp = await this.context.sharp.open(photo.path, {
+        limitInputPixels: true,
+      })
+      const resizePromise = sharp.clone().resize(300, 300, { fit: 'inside' }).toFile(thumbPath)
+      const tilePromise = sharp.clone().tile({layout: 'iiif3',id: item.baseId}).toFile(tilesPath)
+      const copyPromise = fs.promises.copyFile(photo.path, fullPath);
+      
+      await Promise.all([resizePromise, tilePromise, copyPromise])
+      
+      fs.unlink(path.join(item.path, 'vips-properties.xml'), (err) => {
+        if (err) {
+          console.error(`Error deleting file: ${err}`);
+        } else {
+          console.log(`Deleted vips-properties successfully.`);
+        }
+      })
     });
-  }
-
-  async tileImages(item) {
-    try {
-      for (const photo of item.photo) {
-        const tilesPath = path.join(item.path, photo.checksum)
-        const sharp = await this.context.sharp.open(photo.path, {
-          limitInputPixels: true,
-        })
-
-        await sharp
-          .tile({
-            layout: 'iiif3',
-            id: item.baseId
-          })
-          .toFile(tilesPath)
-      }
-    } catch {
-      this.context.logger.trace(`Failed image tile ${item.id}`)
-    }
-
-    unlink(path.join(item.path,'vips-properties.xml'), (err) => {
-      if (err) {
-        console.error(`Error deleting file: ${err}`);
-      } else {
-        console.log(`Deleted vips-properties successfully.`);
-      }
-    })
+    return Promise.all(imageProcessingPromises)
   }
 
   async prompt() {
@@ -161,7 +146,7 @@ class TropiiifyPlugin {
     })
   }
 }
-  
+
 
 TropiiifyPlugin.defaults = {
   itemTemplate: 'Export IIIF 2',
