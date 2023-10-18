@@ -10,7 +10,7 @@ const tropy = ns('https://tropy.org/v1/tropy#');
 class Resource {
 
   static sanitizeString(str) {
-    return str.replaceAll(' ', '_').toLowerCase()
+    return str.replaceAll(' ', '-').toLowerCase()
   }
 
   constructor(data = {}, map, options = {}) {
@@ -24,7 +24,7 @@ class Resource {
 
     const cleanId = Resource.sanitizeString(this.id)
     this.path = path.join(this.options.output, cleanId) //manifest filesystem path
-    this.baseId = new URL(`/iiif/${cleanId}`, this.options.baseId).toString()  //manifest URI
+    this.baseId = new URL(`/${cleanId}`, this.options.baseId).toString()  //manifest URI
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
@@ -49,7 +49,7 @@ class Resource {
 
   async createManifest() {
     const normalizedManifest = manifestBuilder.createManifest(
-      `${Resource.sanitizeString(this.baseId)}/manifest.json`,
+      `${this.baseId}/manifest.json`,
       manifest => {
         manifest.addLabel(this.label);
         this.summary && manifest.addSummary(this.summary)
@@ -65,7 +65,10 @@ class Resource {
           format: 'text/html'
         })
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
-        manifest.addThumbnail({ id: new URL('/square/600,/0/default.jpg', this.baseId).toString(), type: 'Image', format: 'image/jpeg' });
+        manifest.addThumbnail({
+          id:
+            `${this.baseId}/${this.photo[0].checksum}/full/!300,300/0/default${path.extname(this.photo[0].path) || '.jpg'}`, type: 'Image', format: this.photo[0].mimetype
+        });
         this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  
         this.createCanvases(manifest)
       }
@@ -77,8 +80,8 @@ class Resource {
     for (let property in this) {
       if (property.startsWith('metadata') && this[property]) {
         manifest.addMetadata(
-          property.replace('metadata', ''),
-          this.assembleHTML(property)
+          { "none": [property.replace('metadata', '')] },
+          { "none": [this.assembleHTML(property)] },
         )
       }
     }
@@ -89,7 +92,7 @@ class Resource {
       const canvasId = `${this.baseId}/canvas/${index}`
       const annPageId = `${canvasId}/annotation-page/${index}`
       const annId = `${this.baseId}/annotation/${index}`
-      const bodyId = `${this.baseId}/${photo.checksum}/full/max/0/default${path.extname(photo.path)}`
+      const bodyId = `${this.baseId}/${photo.checksum}/full/max/0/default${path.extname(photo.path) || '.jpg'}`
       manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
