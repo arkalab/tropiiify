@@ -2,7 +2,6 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFile } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
@@ -83,7 +82,7 @@ class TropiiifyPlugin {
   async writeJson(objPath, obj) {
     const jsonData = JSON.stringify(obj, null, 4)
     this.createDirectory(path.dirname(objPath))
-    writeFile(objPath, jsonData, (err) => {
+    fs.writeFile(objPath, jsonData, (err) => {
       if (err) throw err;
       console.log('The file has been saved!');
     })
