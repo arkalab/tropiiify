@@ -5,6 +5,7 @@
   "description": "A Tropy plugin for exporting IIIF collections",
   "icon": "icon.svg",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "test": "electron-mocha --renderer test",
     "lint": "eslint --color src test",
@@ -43,6 +44,12 @@
       "default": "http://localhost:8887/",
       "placeholder": "http://localhost:8887/",
       "hint": "The URL prefix to use in the exported manifests and collections. This should be a publicly accessible web location"
+    },
+    {
+      "field": "homepageLabel",
+      "label": "Homepage Label",
+      "default": "Object homepage",
+      "hint": "The label to use for the manifests Homepage section"
     },
     {
       "field": "requiredStatementLabel",
