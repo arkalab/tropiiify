@@ -2,6 +2,7 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
+const { writeFile, copyFile } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
@@ -20,14 +21,15 @@ class TropiiifyPlugin {
   }
 
   async export(data) {
-    console.log('Raw export:', data)
+    console.time('Total export time')
+    //console.log('Raw export:', data)
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
 
     // Prompt user to select output directory
     this.options['output'] = await this.prompt()
 
     const expanded = await this.context.json.expand(data)
-    console.log("Expanded data:", expanded)
+    //console.log("Expanded data:", expanded)
 
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
@@ -35,10 +37,16 @@ class TropiiifyPlugin {
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
+        console.time('Total item time')
+
         const manifestPath = path.join(item.path, 'manifest.json')
-        this.writeJson(manifestPath, await item.createManifest())
-        await this.handleImages(item)
-        //console.log('Manifest:', await manifest)
+        const sizes = await this.handleImages(item)
+        const manifest = await item.createManifest(sizes)
+
+        item.latitude && item.longitude && this.addNavPlace(manifest, item)
+
+        this.writeJson(manifestPath, manifest)
+        console.timeEnd('Total item time')
       } catch (e) {
         console.log(e.stack)
       }
@@ -47,6 +55,7 @@ class TropiiifyPlugin {
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
     this.complete()
+    console.timeEnd('Total export time')
   }
 
   createCollection(items) {
@@ -82,9 +91,8 @@ class TropiiifyPlugin {
   async writeJson(objPath, obj) {
     const jsonData = JSON.stringify(obj, null, 4)
     this.createDirectory(path.dirname(objPath))
-    fs.writeFile(objPath, jsonData, (err) => {
+    writeFile(objPath, jsonData, (err) => {
       if (err) throw err;
-      console.log('The file has been saved!');
     })
     return null
   }
@@ -93,40 +101,100 @@ class TropiiifyPlugin {
     try {
       if (!fs.existsSync(path)) {
         fs.mkdirSync(path, { recursive: true });
-        console.log(`Directory "${path}" created successfully.`);
+        //console.log(`Directory "${path}" created successfully.`);
       }
     } catch (err) {
       console.error(`Error creating directory: ${err}`);
     }
   }
 
-  handleImages(item) {
-    const imageProcessingPromises = item.photo.map(async photo => {
-      const fullPath = path.join(item.path, photo.checksum, 'full', 'max', '0', `default${path.extname(photo.path) || '.jpg'}`);
-      const thumbPath = path.join(item.path, photo.checksum, 'full', '!300,300', '0', `default${path.extname(photo.path) || '.jpg'}`)
-      const tilesPath = path.join(item.path, photo.checksum)
-
-      this.createDirectory(path.dirname(thumbPath))
-      this.createDirectory(path.dirname(fullPath));
-
-      const sharp = await this.context.sharp.open(photo.path, {
+  async handleImages(item) {
+    const promises = item.photo.map(async (photo) => {
+      const tilesPath = path.join(item.path, photo.checksum);
+      const sharpInstance = await this.context.sharp.open(photo.path, {
         limitInputPixels: true,
-      })
-      const resizePromise = sharp.clone().resize(300, 300, { fit: 'inside' }).toFile(thumbPath)
-      const tilePromise = sharp.clone().tile({layout: 'iiif3',id: item.baseId}).toFile(tilesPath)
-      const copyPromise = fs.promises.copyFile(photo.path, fullPath);
-      
-      await Promise.all([resizePromise, tilePromise, copyPromise])
-      
-      fs.unlink(path.join(item.path, 'vips-properties.xml'), (err) => {
-        if (err) {
-          console.error(`Error deleting file: ${err}`);
-        } else {
-          console.log(`Deleted vips-properties successfully.`);
-        }
-      })
+      });
+  
+      // Thumbnail
+      const thumbSize = await this.processImage(sharpInstance.clone(), 300, item, photo);
+  
+      // Midsize
+      const midSize = await this.processImage(sharpInstance.clone(), 1200, item, photo);
+  
+      // Tile
+      await sharpInstance.clone().tile({ layout: 'iiif3', id: item.baseId }).toFile(tilesPath);
+      await fs.promises.unlink(path.join(item.path, 'vips-properties.xml'));
+      const infoPath = path.join(tilesPath, 'info.json');
+      const infoData = await fs.promises.readFile(infoPath, 'utf-8');
+      const infoJson = JSON.parse(infoData);
+      infoJson.sizes = [thumbSize, midSize];
+      await fs.promises.writeFile(infoPath, JSON.stringify(infoJson, null, 2));
+  
+      return { thumb: thumbSize, midsize: midSize };
     });
-    return Promise.all(imageProcessingPromises)
+  
+    // Wait for all promises to resolve
+    return Promise.all(promises);
+  }
+  
+
+  async processImage(sharpInstance, maxDimension, item, photo) {
+    const size = {};
+  
+    try {
+      await new Promise((resolve, reject) => {
+        sharpInstance
+          .resize(maxDimension, maxDimension, { fit: 'inside' })
+          .toBuffer((err, data, info) => {
+            if (err) {
+              console.error('Error:', err);
+              reject(err);
+            } else {
+              const { width, height } = info;
+              size.width = width;
+              size.height = height;
+              const destination = path.join(
+                item.path,
+                photo.checksum,
+                'full',
+                `${width},${height}`,
+                '0',
+                `default${path.extname(photo.path) || '.jpg'}`
+              );
+              fs.promises.mkdir(path.dirname(destination), { recursive: true })
+                .then(() => fs.promises.writeFile(destination, data))
+                .then(() => {
+                  resolve(size);
+                })
+                .catch(reject);
+            }
+          });
+      });
+    } catch (error) {
+      console.error('Error in processImage:', error);
+    }
+  
+    return size;
+  }
+
+  addNavPlace(manifest, item) {
+    const navPlace = {
+      id: `${item.baseId}/feature-collection/0`,
+      type: 'FeatureCollection',
+      features: [
+        {
+          id: `${item.baseId}/feature/0`,
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [item.longitude, item.latitude],
+          },
+          properties: {
+            label: [{ none: item.label }],
+          },
+        }]
+    };
+    manifest.navPlace = navPlace
   }
 
   async prompt() {
