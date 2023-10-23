@@ -2,7 +2,7 @@
 
 const { IIIFBuilder } = require('iiif-builder');
 const collectionBuilder = new IIIFBuilder();
-const { writeFile, copyFile } = require('fs')
+const { writeFile } = require('fs')
 const { Resource } = require('./resource')
 const path = require('path');
 const fs = require('fs');
@@ -41,12 +41,12 @@ class TropiiifyPlugin {
 
         const manifestPath = path.join(item.path, 'manifest.json')
         const sizes = await this.handleImages(item)
-        const manifest = await item.createManifest(sizes)
-
-        item.latitude && item.longitude && this.addNavPlace(manifest, item)
-
-        this.writeJson(manifestPath, manifest)
-        console.timeEnd('Total item time')
+                const manifest = await item.createManifest(sizes)
+        
+                item.latitude && item.longitude && this.addNavPlace(manifest, item)
+        
+                this.writeJson(manifestPath, manifest)
+                console.timeEnd('Total item time')
       } catch (e) {
         console.log(e.stack)
       }
@@ -116,11 +116,11 @@ class TropiiifyPlugin {
       });
   
       // Thumbnail
-      const thumbSize = await this.processImage(sharpInstance.clone(), 300, item, photo);
-  
+            const thumbSize = await this.processImage(sharpInstance.clone(), 300, item, photo);
+        
       // Midsize
-      const midSize = await this.processImage(sharpInstance.clone(), 1200, item, photo);
-  
+            const midSize = await this.processImage(sharpInstance.clone(), 1200, item, photo);
+        
       // Tile
       await sharpInstance.clone().tile({ layout: 'iiif3', id: item.baseId }).toFile(tilesPath);
       await fs.promises.unlink(path.join(item.path, 'vips-properties.xml'));
@@ -128,8 +128,8 @@ class TropiiifyPlugin {
       const infoData = await fs.promises.readFile(infoPath, 'utf-8');
       const infoJson = JSON.parse(infoData);
       infoJson.sizes = [thumbSize, midSize];
-      await fs.promises.writeFile(infoPath, JSON.stringify(infoJson, null, 2));
-  
+      await fs.promises.writeFile(infoPath, JSON.stringify(infoJson, null, 2));  
+
       return { thumb: thumbSize, midsize: midSize };
     });
   
