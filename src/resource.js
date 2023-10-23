@@ -47,11 +47,13 @@ class Resource {
     return this[property].replace(LINK, '<a href="$2" target="_blank">$1</a>')
   }
 
-  async createManifest() {
-        const normalizedManifest = manifestBuilder.createManifest(
+  createManifest(sizes) {
+    console.log('[1] Received by createManifest:', sizes)
+    const normalizedManifest = manifestBuilder.createManifest(
       `${this.baseId}/manifest.json`,
       manifest => {
-                manifest.addLabel(this.label);
+        const { thumbWidth, thumbHeight } = sizes[0].thumb
+        manifest.addLabel(this.label);
         this.summary && manifest.addSummary(this.summary)
         this.rights && manifest.setRights(this.rights);
         this.requiredstatementValue && manifest.setRequiredStatement({
@@ -67,7 +69,11 @@ class Resource {
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({
           id:
-            `${this.baseId}/${this.photo[0].checksum}/full/${sizes[0].thumb.width},${sizes[0].thumb.height}/0/default${path.extname(this.photo[0].path) || '.jpg'}`, type: 'Image', format: this.photo[0].mimetype
+            `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(this.photo[0].path) || '.jpg'}`, 
+            type: 'Image', 
+            format: this.photo[0].mimetype,
+            width: thumbWidth,
+            height: thumbHeight,
         });
         this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  
         this.createCanvases(manifest, sizes)
@@ -89,11 +95,12 @@ class Resource {
 
   createCanvases(manifest, sizes) {
     for (let [index, photo] of this.photo.entries()) {
+      const { midWidth, midHeight } = sizes[index].midsize
       const canvasId = `${this.baseId}/canvas/${index}`
       const annPageId = `${canvasId}/annotation-page/${index}`
       const annId = `${this.baseId}/annotation/${index}`
-      const bodyId = `${this.baseId}/${photo.checksum}/full/max/0/default${path.extname(photo.path) || '.jpg'}`
-            manifest.createCanvas(canvasId, (canvas) => {
+      const bodyId = `${this.baseId}/${photo.checksum}/full/${midWidth},${midHeight}/0/default${path.extname(photo.path) || '.jpg'}`
+      manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
         canvas.createAnnotation(annPageId,
