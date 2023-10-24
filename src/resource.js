@@ -22,9 +22,9 @@ class Resource {
       this[property] = this.extractValue(data, map[property]) //Must/should have an 'id' prop
     }
 
-    const cleanId = Resource.sanitizeString(this.id)
-    this.path = path.join(this.options.output, cleanId) //manifest filesystem path
-    this.baseId = new URL(`/${cleanId}`, this.options.baseId).toString()  //manifest URI
+    this.id = Resource.sanitizeString(this.id)
+    this.path = path.join(this.options.output, this.id) //manifest filesystem path
+    this.baseId = new URL(`/${this.id}`, this.options.baseId).toString()  //manifest URI
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
@@ -48,7 +48,6 @@ class Resource {
   }
 
   createManifest(sizes) {
-    console.log('[1] Received by createManifest:', sizes)
     const normalizedManifest = manifestBuilder.createManifest(
       `${this.baseId}/manifest.json`,
       manifest => {
@@ -74,7 +73,7 @@ class Resource {
             format: this.photo[0].mimetype,
             width: thumbWidth,
             height: thumbHeight,
-        });
+                    });
         this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  
         this.createCanvases(manifest, sizes)
       }
@@ -112,8 +111,8 @@ class Resource {
               id: bodyId,
               type: 'Image',
               format: photo.mimetype,
-              width: photo.width,
-              height: photo.height,
+              width: midWidth,
+              height: midHeight,
               service: [
                 {
                   "id": `${this.baseId}/${photo.checksum}`,
