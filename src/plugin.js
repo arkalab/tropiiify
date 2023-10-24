@@ -21,7 +21,7 @@ class TropiiifyPlugin {
   }
 
   async export(data) {
-    console.time('Total export time')
+    const startTime = performance.now();
     //console.log('Raw export:', data)
     this.context.logger.trace('Called export hook from IIIF Builder plugin')
 
@@ -37,16 +37,14 @@ class TropiiifyPlugin {
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
-        console.time('Total item time')
-
-        const manifestPath = path.join(item.path, 'manifest.json')
         const sizes = await this.handleImages(item)
-                const manifest = await item.createManifest(sizes)
-        
-                item.latitude && item.longitude && this.addNavPlace(manifest, item)
-        
-                this.writeJson(manifestPath, manifest)
-                console.timeEnd('Total item time')
+        await fs.promises.unlink(path.join(item.path, 'vips-properties.xml'));
+        console.log('sizes:', sizes)        
+        const manifest = await item.createManifest(sizes)
+        console.log('manifest:', manifest)        
+        item.latitude && item.longitude && this.addNavPlace(manifest, item)
+        const manifestPath = path.join(item.path, 'manifest.json')
+        this.writeJson(manifestPath, manifest)
       } catch (e) {
         console.log(e.stack)
       }
@@ -54,8 +52,9 @@ class TropiiifyPlugin {
     // Create collection from same source data and write file
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
-    this.complete()
-    console.timeEnd('Total export time')
+    const endTime = performance.now();
+    const executionTime = endTime - startTime;
+    this.complete(executionTime)
   }
 
   createCollection(items) {
@@ -63,11 +62,25 @@ class TropiiifyPlugin {
       this.options.baseId + 'index.json', //lowercase and no whitespace (forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
-        for (let item of items) {
+        for (let [index, item] of items.entries()) {
           const id = this.options.baseId + item.id + '/manifest.json'
           collection.createManifest(id, (manifest) => {
             manifest.addLabel(item.label);
           })
+          if (index === 0) {
+            const { path: imagePath, checksum, width, height, mimetype } = item.photo[0]
+            const ratio = Math.max(width, height) / 300 
+            const newWidth = Math.round(width/ratio)
+            const newHeight = Math.round(height/ratio)
+            collection.addThumbnail({
+              id:
+                `${item.baseId}/${checksum}/full/${Math.round(newWidth)},${Math.round(newHeight)}/0/default${path.extname(imagePath) || '.jpg'}`,
+              type: 'Image',
+              format: mimetype,
+              width: newWidth,
+              height: newHeight,
+            })
+          }
         }
       })
     return collectionBuilder.toPresentation3({ id: collection.id, type: 'Collection' });
@@ -114,33 +127,32 @@ class TropiiifyPlugin {
       const sharpInstance = await this.context.sharp.open(photo.path, {
         limitInputPixels: true,
       });
-  
-      // Thumbnail
-            const thumbSize = await this.processImage(sharpInstance.clone(), 300, item, photo);
-        
-      // Midsize
-            const midSize = await this.processImage(sharpInstance.clone(), 1200, item, photo);
-        
+
+      const thumbPromise = this.processImage(sharpInstance.clone(), 300, item, photo);
+      const midsizePromise = this.processImage(sharpInstance.clone(), 2000, item, photo);
+
+      // Wait for both thumbnail and midsize promises to resolve
+      const [thumbSize, midSize] = await Promise.all([thumbPromise, midsizePromise]);
+
       // Tile
       await sharpInstance.clone().tile({ layout: 'iiif3', id: item.baseId }).toFile(tilesPath);
-      await fs.promises.unlink(path.join(item.path, 'vips-properties.xml'));
       const infoPath = path.join(tilesPath, 'info.json');
       const infoData = await fs.promises.readFile(infoPath, 'utf-8');
       const infoJson = JSON.parse(infoData);
       infoJson.sizes = [thumbSize, midSize];
-      await fs.promises.writeFile(infoPath, JSON.stringify(infoJson, null, 2));  
+      await fs.promises.writeFile(infoPath, JSON.stringify(infoJson, null, 2));
 
       return { thumb: thumbSize, midsize: midSize };
     });
-  
+
     // Wait for all promises to resolve
     return Promise.all(promises);
   }
-  
+
 
   async processImage(sharpInstance, maxDimension, item, photo) {
     const size = {};
-  
+
     try {
       await new Promise((resolve, reject) => {
         sharpInstance
@@ -173,7 +185,7 @@ class TropiiifyPlugin {
     } catch (error) {
       console.error('Error in processImage:', error);
     }
-  
+
     return size;
   }
 
@@ -206,9 +218,9 @@ class TropiiifyPlugin {
     return output
   }
 
-  async complete() {
+  async complete(time) {
     await this.context.dialog.notify('export.complete', {
-      message: 'Export complete!',
+      message: `Export complete!\nIt took ${(time/60000).toFixed(1)} minutes.`,
       type: 'info'
     })
   }
