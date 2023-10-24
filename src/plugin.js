@@ -39,9 +39,7 @@ class TropiiifyPlugin {
       try {
         const sizes = await this.handleImages(item)
         await fs.promises.unlink(path.join(item.path, 'vips-properties.xml'));
-        console.log('sizes:', sizes)        
         const manifest = await item.createManifest(sizes)
-        console.log('manifest:', manifest)        
         item.latitude && item.longitude && this.addNavPlace(manifest, item)
         const manifestPath = path.join(item.path, 'manifest.json')
         this.writeJson(manifestPath, manifest)
@@ -59,11 +57,11 @@ class TropiiifyPlugin {
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      this.options.baseId + 'index.json', //lowercase and no whitespace (forbid #, etc?)
+      `${this.options.baseId}/index.json`, //lowercase and no whitespace (forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let [index, item] of items.entries()) {
-          const id = this.options.baseId + item.id + '/manifest.json'
+          const id = `${item.baseId}/manifest.json`
           collection.createManifest(id, (manifest) => {
             manifest.addLabel(item.label);
           })
@@ -152,7 +150,6 @@ class TropiiifyPlugin {
 
   async processImage(sharpInstance, maxDimension, item, photo) {
     const size = {};
-
     try {
       await new Promise((resolve, reject) => {
         sharpInstance
@@ -185,7 +182,6 @@ class TropiiifyPlugin {
     } catch (error) {
       console.error('Error in processImage:', error);
     }
-
     return size;
   }
 
