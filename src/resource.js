@@ -24,7 +24,7 @@ class Resource {
 
     this.id = Resource.sanitizeString(this.id)
     this.path = path.join(this.options.output, this.id) //manifest filesystem path
-    this.baseId = new URL(`/${this.id}`, this.options.baseId).toString()  //manifest URI
+    this.baseId = `${this.options.baseId}/${this.id}` //manifest URI
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
@@ -51,7 +51,7 @@ class Resource {
     const normalizedManifest = manifestBuilder.createManifest(
       `${this.baseId}/manifest.json`,
       manifest => {
-        const { thumbWidth, thumbHeight } = sizes[0].thumb
+        const { width: thumbWidth, height: thumbHeight } = sizes[0].thumb
         manifest.addLabel(this.label);
         this.summary && manifest.addSummary(this.summary)
         this.rights && manifest.setRights(this.rights);
@@ -94,7 +94,7 @@ class Resource {
 
   createCanvases(manifest, sizes) {
     for (let [index, photo] of this.photo.entries()) {
-      const { midWidth, midHeight } = sizes[index].midsize
+      const { width: midWidth, height: midHeight } = sizes[index].midsize
       const canvasId = `${this.baseId}/canvas/${index}`
       const annPageId = `${canvasId}/annotation-page/${index}`
       const annId = `${this.baseId}/annotation/${index}`
