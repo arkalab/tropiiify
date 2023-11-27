@@ -13,7 +13,7 @@
 ## Usage
 
 Select the items you want to add to your IIIF collection (or none if you want 
-to include all items) and select File > Import > tropiiify.
+to include all items) and select File > Export > tropiiify.
 You will be prompted to select a destination folder where the exported files will be saved. The plugin will then create IIIF manifests for each Tropy item, create a collection with all manifests, and tile the images so they can be zoomed in efficiently.
 
 ## Export templates
