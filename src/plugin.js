@@ -27,6 +27,9 @@ class TropiiifyPlugin {
 
     // Prompt user to select output directory
     this.options['output'] = await this.prompt()
+    if (this.options['output'] === null) {
+      return;
+    }
 
     const expanded = await this.context.json.expand(data)
     //console.log("Expanded data:", expanded)
@@ -209,9 +212,13 @@ class TropiiifyPlugin {
     let output = await this.context.dialog.open({
       properties: ['openDirectory']
     })
-    output = path.join(output[0], 'iiif')
-    this.createDirectory(output)
-    return output
+    if (output.length > 0) {
+      output = path.join(output[0], 'iiif')
+      this.createDirectory(output)
+      return output  
+    } else {
+      return null
+    }
   }
 
   async complete(time) {
@@ -224,7 +231,7 @@ class TropiiifyPlugin {
 
 
 TropiiifyPlugin.defaults = {
-  itemTemplate: 'Export IIIF 2',
+  itemTemplate: '',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
