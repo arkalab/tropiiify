@@ -23,20 +23,32 @@ class TropiiifyPlugin {
   async export(data) {
     const startTime = performance.now();
     //console.log('Raw export:', data)
-    this.context.logger.trace('Called export hook from IIIF Builder plugin')
+    this.context.logger.trace('Called export hook from Tropiiify plugin')
 
-    // Prompt user to select output directory
+    const expanded = (await this.context.json.expand(data))[0]?.['@graph']
+    //console.log("Expanded data:", expanded)
+
+    // Map property URIs to template labels (that should be named according to the convention)
+    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
+    
+    // Check if all items have ids, abort if not
+    const idProp = map['id']
+    const missingIds = !expanded.every(item => item[idProp])
+    if (missingIds) {
+      this.context.dialog.notify('export.complete', {
+        message: 'Every item must have an identifier. Please review your project and try again.',
+        type: 'info'
+      })
+      return
+    }
+    
+    // Prompt user to select output directory, abort if canceled
     this.options['output'] = await this.prompt()
     if (this.options['output'] === null) {
       return;
     }
 
-    const expanded = await this.context.json.expand(data)
-    //console.log("Expanded data:", expanded)
-
-    // Map property URIs to template labels (that should be named according to the convention)
-    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.options))
+    const items = expanded.map((item) => new Resource(item, map, this.options))
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
@@ -50,7 +62,8 @@ class TropiiifyPlugin {
         console.log(e.stack)
       }
     }
-    // Create collection from same source data and write file
+
+    // Create collection using the same data and write file
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
     const endTime = performance.now();
