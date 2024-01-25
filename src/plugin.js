@@ -73,7 +73,7 @@ class TropiiifyPlugin {
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      `${this.options.baseId}/index.json`, //lowercase and no whitespace (forbid #, etc?)
+      `${this.options.baseId.replace(/\/$/,'')}/index.json`, //lowercase and no whitespace (TODO: forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let [index, item] of items.entries()) {

@@ -19,12 +19,12 @@ class Resource {
     this.options = options
 
     for (let property in map) {
-      this[property] = this.extractValue(data, map[property]) //Must/should have an 'id' prop
+      this[property] = this.extractValue(data, map[property])
     }
 
     this.id = Resource.sanitizeString(this.id)
     this.path = path.join(this.options.output, this.id) //manifest filesystem path
-    this.baseId = `${this.options.baseId}/${this.id}` //manifest URI
+    this.baseId = `${this.options.baseId.replace(/\/$/,'')}/${this.id}` //manifest URI
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
