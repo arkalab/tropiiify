@@ -83,9 +83,9 @@ class TropiiifyPlugin {
           })
           if (index === 0) {
             const { path: imagePath, checksum, width, height, mimetype } = item.photo[0]
-            const ratio = Math.max(width, height) / 300 
-            const newWidth = Math.round(width/ratio)
-            const newHeight = Math.round(height/ratio)
+            const ratio = Math.max(width, height) / 300
+            const newWidth = Math.round(width / ratio)
+            const newHeight = Math.round(height / ratio)
             collection.addThumbnail({
               id:
                 `${item.baseId}/${checksum}/full/${Math.round(newWidth)},${Math.round(newHeight)}/0/default${path.extname(imagePath) || '.jpg'}`,
@@ -101,14 +101,27 @@ class TropiiifyPlugin {
   }
 
   mapLabelsToIds(template) {
-    let map = {}
-    for (let { label, property } of template.fields) {
-      label
-        .split('|')
-        .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
-        .map((label) => map[label] = property)
+    let propMap = {}
+    if (!template.id || template.id === 'https://tropy.org/v1/templates/generic') {
+      propMap = {
+        id: "http://purl.org/dc/elements/1.1/identifier",
+        label: "http://purl.org/dc/elements/1.1/title",
+        metadataCreator: "http://purl.org/dc/elements/1.1/creator",
+        metadataDate: "http://purl.org/dc/elements/1.1/date",
+        metadataType: "http://purl.org/dc/elements/1.1/type",
+        requiredstatementValue: "http://purl.org/dc/elements/1.1/source",
+        rights: "http://purl.org/dc/elements/1.1/rights",
+        summary: "http://purl.org/dc/elements/1.1/description",
+      }
+    } else {
+      for (let { label, property } of template.fields) {
+        label
+          .split('|')
+          .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
+          .map((label) => propMap[label] = property)
+      }
     }
-    return map
+    return propMap
   }
 
   loadTemplate(id) {
@@ -244,12 +257,12 @@ class TropiiifyPlugin {
 
 
 TropiiifyPlugin.defaults = {
-  itemTemplate: '',
+  itemTemplate: 'Tropy Generic',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
   requiredStatementText: 'Provided by',
-  baseId: 'http://localhost:8887/iiif/',
+  baseId: 'http://127.0.0.1:8080',
 }
 
 module.exports = TropiiifyPlugin
