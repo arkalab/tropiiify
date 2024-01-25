@@ -30,7 +30,7 @@ class TropiiifyPlugin {
 
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    
+
     // Check if all items have ids, abort if not
     const idProp = map['id']
     const missingIds = !expanded.every(item => item[idProp])
@@ -41,7 +41,7 @@ class TropiiifyPlugin {
       })
       return
     }
-    
+
     // Prompt user to select output directory, abort if canceled
     this.options['output'] = await this.prompt()
     if (this.options['output'] === null) {
@@ -73,7 +73,7 @@ class TropiiifyPlugin {
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      `${this.options.baseId.replace(/\/$/,'')}/index.json`, //lowercase and no whitespace (TODO: forbid #, etc?)
+      `${this.options.baseId.replace(/\/$/, '')}/index.json`, //lowercase and no whitespace (TODO: forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let [index, item] of items.entries()) {
@@ -241,7 +241,7 @@ class TropiiifyPlugin {
     if (output.length > 0) {
       output = path.join(output[0], 'iiif')
       this.createDirectory(output)
-      return output  
+      return output
     } else {
       return null
     }
@@ -249,7 +249,7 @@ class TropiiifyPlugin {
 
   async complete(time) {
     await this.context.dialog.notify('export.complete', {
-      message: `Export complete!\nIt took ${(time/60000).toFixed(1)} minutes.`,
+      message: `Export complete!\nIt took ${(time / 60000).toFixed(1)} minutes.`,
       type: 'info'
     })
   }

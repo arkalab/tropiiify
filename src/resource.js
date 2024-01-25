@@ -24,7 +24,7 @@ class Resource {
 
     this.id = Resource.sanitizeString(this.id)
     this.path = path.join(this.options.output, this.id) //manifest filesystem path
-    this.baseId = `${this.options.baseId.replace(/\/$/,'')}/${this.id}` //manifest URI
+    this.baseId = `${this.options.baseId.replace(/\/$/, '')}/${this.id}` //manifest URI
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
@@ -68,12 +68,12 @@ class Resource {
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({
           id:
-            `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(this.photo[0].path) || '.jpg'}`, 
-            type: 'Image', 
-            format: this.photo[0].mimetype,
-            width: thumbWidth,
-            height: thumbHeight,
-                    });
+            `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(this.photo[0].path) || '.jpg'}`,
+          type: 'Image',
+          format: this.photo[0].mimetype,
+          width: thumbWidth,
+          height: thumbHeight,
+        });
         this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  
         this.createCanvases(manifest, sizes)
       }
