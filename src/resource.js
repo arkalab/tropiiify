@@ -110,8 +110,8 @@ class Resource {
       manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
-        canvas.createAnnotation(annPageId,
-          {
+        canvas.createAnnotationPage(annPageId, (annoPage) => {
+          annoPage.createAnnotation({
             id: paintingAnnId,
             type: 'Annotation',
             motivation: 'painting',
@@ -130,14 +130,15 @@ class Resource {
               ]
             }
           }
-        )
+          )
+        })
         if (photo.note || (photo.selection && photo.selection.length > 0)) {
           // this.addAnnotations()
-          const annoPageId = `${canvasId}/annopage-2` 
+          const annoPageId = `${canvasId}/annopage-2`
           canvas.createAnnotationPage(annoPageId, (annoPage) => {
             const buildAnnotation = (canvasId, annoIndex, value) => {
               annoPage.createAnnotation({
-                "id": `${canvasId}/annopage-2/anno-${annoIndex}`, 
+                "id": `${canvasId}/annopage-2/anno-${annoIndex}`,
                 "type": "Annotation",
                 "motivation": "commenting",
                 "body": {
