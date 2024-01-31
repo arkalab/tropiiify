@@ -39,7 +39,6 @@ class Resource {
         y: this.extractValue(selection, tropy('y')),
         width: this.extractValue(selection, tropy('width')),
         height: this.extractValue(selection, tropy('height')),
-
       }))
     }))
 
@@ -47,7 +46,7 @@ class Resource {
   }
 
   extractValue(data, property) {
-    return data[property]?.[0]['@value'] || data[property]?.[0]['@list'];
+    return data?.[property]?.[0]?.['@value'] || data?.[property]?.[0]?.['@list'];
   }
 
   assembleHTML(property) {

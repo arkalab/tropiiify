@@ -260,7 +260,7 @@ class TropiiifyPlugin {
 
 
 TropiiifyPlugin.defaults = {
-  itemTemplate: 'Tropy Generic',
+  itemTemplate: 'https://tropy.org/v1/templates/generic',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
