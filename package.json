@@ -73,8 +73,8 @@
     }
   ],
   "devDependencies": {
-    "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-json": "^6.0.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "electron": "^18.2.2",
     "electron-mocha": "^11.0.2",
@@ -83,6 +83,6 @@
     "rollup-plugin-license": "^2.7.0"
   },
   "dependencies": {
-    "iiif-builder": "^1.0.6"
+    "iiif-builder": "https://pkg.csb.dev/IIIF-Commons/iiif-builder/commit/d9a1e3fe/iiif-builder"
   }
 }

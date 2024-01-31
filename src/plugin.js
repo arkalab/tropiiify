@@ -23,17 +23,32 @@ class TropiiifyPlugin {
   async export(data) {
     const startTime = performance.now();
     //console.log('Raw export:', data)
-    this.context.logger.trace('Called export hook from IIIF Builder plugin')
+    this.context.logger.trace('Called export hook from Tropiiify plugin')
 
-    // Prompt user to select output directory
-    this.options['output'] = await this.prompt()
-
-    const expanded = await this.context.json.expand(data)
+    const expanded = (await this.context.json.expand(data))[0]?.['@graph']
     //console.log("Expanded data:", expanded)
 
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    const items = expanded[0]['@graph'].map((item) => new Resource(item, map, this.options))
+
+    // Check if all items have ids, abort if not
+    const idProp = map['id']
+    const missingIds = !expanded.every(item => item[idProp])
+    if (missingIds) {
+      this.context.dialog.notify('export.complete', {
+        message: 'Every item must have an identifier. Please review your project and try again.',
+        type: 'info'
+      })
+      return
+    }
+
+    // Prompt user to select output directory, abort if canceled
+    this.options['output'] = await this.prompt()
+    if (this.options['output'] === null) {
+      return;
+    }
+
+    const items = expanded.map((item) => new Resource(item, map, this.options))
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {
@@ -47,7 +62,8 @@ class TropiiifyPlugin {
         console.log(e.stack)
       }
     }
-    // Create collection from same source data and write file
+
+    // Create collection using the same data and write file
     const collectionPath = path.join(this.options.output, 'index.json')
     this.writeJson(collectionPath, this.createCollection(items))
     const endTime = performance.now();
@@ -57,7 +73,7 @@ class TropiiifyPlugin {
 
   createCollection(items) {
     const collection = collectionBuilder.createCollection(
-      `${this.options.baseId}/index.json`, //lowercase and no whitespace (forbid #, etc?)
+      `${this.options.baseId.replace(/\/$/, '')}/index.json`, //lowercase and no whitespace (TODO: forbid #, etc?)
       collection => {
         collection.addLabel(this.options.collectionName)
         for (let [index, item] of items.entries()) {
@@ -67,9 +83,9 @@ class TropiiifyPlugin {
           })
           if (index === 0) {
             const { path: imagePath, checksum, width, height, mimetype } = item.photo[0]
-            const ratio = Math.max(width, height) / 300 
-            const newWidth = Math.round(width/ratio)
-            const newHeight = Math.round(height/ratio)
+            const ratio = Math.max(width, height) / 300
+            const newWidth = Math.round(width / ratio)
+            const newHeight = Math.round(height / ratio)
             collection.addThumbnail({
               id:
                 `${item.baseId}/${checksum}/full/${Math.round(newWidth)},${Math.round(newHeight)}/0/default${path.extname(imagePath) || '.jpg'}`,
@@ -85,14 +101,27 @@ class TropiiifyPlugin {
   }
 
   mapLabelsToIds(template) {
-    let map = {}
-    for (let { label, property } of template.fields) {
-      label
-        .split('|')
-        .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
-        .map((label) => map[label] = property)
+    let propMap = {}
+    if (!template.id || template.id === 'https://tropy.org/v1/templates/generic') {
+      propMap = {
+        id: "http://purl.org/dc/elements/1.1/identifier",
+        label: "http://purl.org/dc/elements/1.1/title",
+        metadataCreator: "http://purl.org/dc/elements/1.1/creator",
+        metadataDate: "http://purl.org/dc/elements/1.1/date",
+        metadataType: "http://purl.org/dc/elements/1.1/type",
+        requiredstatementValue: "http://purl.org/dc/elements/1.1/source",
+        rights: "http://purl.org/dc/elements/1.1/rights",
+        summary: "http://purl.org/dc/elements/1.1/description",
+      }
+    } else {
+      for (let { label, property } of template.fields) {
+        label
+          .split('|')
+          .map((label) => label.replaceAll(/:(\w)/g, (_, char) => char.toUpperCase()))
+          .map((label) => propMap[label] = property)
+      }
     }
-    return map
+    return propMap
   }
 
   loadTemplate(id) {
@@ -127,13 +156,16 @@ class TropiiifyPlugin {
       });
 
       const thumbPromise = this.processImage(sharpInstance.clone(), 300, item, photo);
-      const midsizePromise = this.processImage(sharpInstance.clone(), 2000, item, photo);
+      // If larger, resize image to 2000px on the long side 
+      const midsizePromise = this.processImage(sharpInstance.clone(), Math.min(2000, (Math.max(photo.width, photo.height))), item, photo);
 
       // Wait for both thumbnail and midsize promises to resolve
       const [thumbSize, midSize] = await Promise.all([thumbPromise, midsizePromise]);
 
-      // Tile
+      // Tile image
       await sharpInstance.clone().tile({ layout: 'iiif3', id: item.baseId }).toFile(tilesPath);
+
+      // Add sizes to info.json
       const infoPath = path.join(tilesPath, 'info.json');
       const infoData = await fs.promises.readFile(infoPath, 'utf-8');
       const infoJson = JSON.parse(infoData);
@@ -209,14 +241,18 @@ class TropiiifyPlugin {
     let output = await this.context.dialog.open({
       properties: ['openDirectory']
     })
-    output = path.join(output[0], 'iiif')
-    this.createDirectory(output)
-    return output
+    if (output.length > 0) {
+      output = path.join(output[0], 'iiif')
+      this.createDirectory(output)
+      return output
+    } else {
+      return null
+    }
   }
 
   async complete(time) {
     await this.context.dialog.notify('export.complete', {
-      message: `Export complete!\nIt took ${(time/60000).toFixed(1)} minutes.`,
+      message: `Export complete!\nIt took ${(time / 60000).toFixed(1)} minutes.`,
       type: 'info'
     })
   }
@@ -224,12 +260,12 @@ class TropiiifyPlugin {
 
 
 TropiiifyPlugin.defaults = {
-  itemTemplate: 'Export IIIF 2',
+  itemTemplate: 'Tropy Generic',
   collectionName: 'My IIIF Collection',
   homepageLabel: 'Object homepage',
   requiredStatementLabel: 'Attribution',
   requiredStatementText: 'Provided by',
-  baseId: 'http://localhost:8887/iiif/',
+  baseId: 'http://127.0.0.1:8080',
 }
 
 module.exports = TropiiifyPlugin
