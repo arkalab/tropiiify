@@ -33,7 +33,7 @@ class Resource {
       mimetype: this.extractValue(photo, tropy('mimetype')),
       path: this.extractValue(photo, tropy('path')),
       note: this.extractValue(this.extractValue(photo, tropy('note'))?.[0], tropy('html')),
-      selection: this.extractValue(photo, tropy('selection')).map((selection) => ({
+      selection: this.extractValue(photo, tropy('selection'))?.map((selection) => ({
         note: this.extractValue(this.extractValue(selection, tropy('note'))?.[0], tropy('html')),
         x: this.extractValue(selection, tropy('x')),
         y: this.extractValue(selection, tropy('y')),
