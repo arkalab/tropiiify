@@ -156,13 +156,16 @@ class TropiiifyPlugin {
       });
 
       const thumbPromise = this.processImage(sharpInstance.clone(), 300, item, photo);
-      const midsizePromise = this.processImage(sharpInstance.clone(), 2000, item, photo);
+      // If larger, resize image to 2000px on the long side 
+      const midsizePromise = this.processImage(sharpInstance.clone(), Math.min(2000, (Math.max(photo.width, photo.height))), item, photo);
 
       // Wait for both thumbnail and midsize promises to resolve
       const [thumbSize, midSize] = await Promise.all([thumbPromise, midsizePromise]);
 
-      // Tile
+      // Tile image
       await sharpInstance.clone().tile({ layout: 'iiif3', id: item.baseId }).toFile(tilesPath);
+
+      // Add sizes to info.json
       const infoPath = path.join(tilesPath, 'info.json');
       const infoData = await fs.promises.readFile(infoPath, 'utf-8');
       const infoJson = JSON.parse(infoData);
