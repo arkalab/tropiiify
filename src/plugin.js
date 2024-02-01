@@ -25,30 +25,29 @@ class TropiiifyPlugin {
     //console.log('Raw export:', data)
     this.context.logger.trace('Called export hook from Tropiiify plugin')
 
-    const expanded = (await this.context.json.expand(data))[0]?.['@graph']
-    //console.log("Expanded data:", expanded)
-
-    // Map property URIs to template labels (that should be named according to the convention)
-    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-
-    // Check if all items have ids, abort if not
-    const idProp = map['id']  
-    const missingIds = !expanded.every(item => item[idProp])
-    if (missingIds) {
-      this.context.dialog.notify('export.complete', {
-        message: 'Every item must have an identifier. Please review your project and try again.',
-        type: 'info'
-      })
-      return
-    }
-
     // Prompt user to select output directory, abort if canceled
     this.options['output'] = await this.prompt()
     if (this.options['output'] === null) {
       return;
     }
 
-    const items = expanded.map((item) => new Resource(item, map, this.options))
+    const expanded = (await this.context.json.expand(data))[0]?.['@graph']
+    //console.log("Expanded data:", expanded)
+
+    // Map property URIs to template labels (that should be named according to the convention)
+    const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
+    
+    const items = expanded.map((item) => new Resource(item, map, this.options));
+    //console.log('items', items)
+    const missingIds = !items.every(item => item['id']);
+    if (missingIds) {
+      this.context.dialog.notify('missing.ids', {
+        message: 'Every item must have an identifier. Please review your project and try again.',
+        type: 'info'
+      });
+      return
+    }
+
     // Iterate over items, create manifest and write file
     for (let item of items) {
       try {

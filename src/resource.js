@@ -16,15 +16,18 @@ class Resource {
   constructor(data = {}, map, options = {}) {
     //this.data = data
     //this.map = map
-    this.options = options
+    this.options = options;
 
     for (let property in map) {
-      this[property] = this.extractValue(data, map[property])
+      this[property] = this.extractValue(data, map[property]);
     }
 
-    this.id = Resource.sanitizeString(this.id)
-    this.path = path.join(this.options.output, this.id) //manifest filesystem path
-    this.baseId = `${this.options.baseId.replace(/\/$/, '')}/${this.id}` //manifest URI
+    this.id
+      && (
+        this.id = this.sanitizeString(this.id),
+        this.path = path.join(this.options.output, this.id), //manifest filesystem path
+        this.baseId = `${this.options.baseId.replace(/\/$/, '')}/${this.id}` //manifest URI
+      )
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
       checksum: this.extractValue(photo, tropy('checksum')),
@@ -132,7 +135,6 @@ class Resource {
           )
         })
         if (photo.note || (photo.selection && photo.selection.length > 0)) {
-          // this.addAnnotations()
           const annoPageId = `${canvasId}/annopage-2`
           canvas.createAnnotationPage(annoPageId, (annoPage) => {
             const buildAnnotation = (canvasId, annoIndex, value) => {
@@ -143,7 +145,7 @@ class Resource {
                 "body": {
                   "type": "TextualBody",
                   "format": "text/html",
-                  "value": value.note ? value.note : value,
+                  "value": value.note || value,
                 },
                 "target": (value.x && value.y && value.width && value.height)
                   ? `${canvasId}#xywh=${value.x},${value.y},${value.width},${value.height}`
