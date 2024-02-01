@@ -32,7 +32,7 @@ class TropiiifyPlugin {
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
 
     // Check if all items have ids, abort if not
-    const idProp = map['id']
+    const idProp = map['id']  
     const missingIds = !expanded.every(item => item[idProp])
     if (missingIds) {
       this.context.dialog.notify('export.complete', {
@@ -102,7 +102,7 @@ class TropiiifyPlugin {
 
   mapLabelsToIds(template) {
     let propMap = {}
-    if (!template.id || template.id === 'https://tropy.org/v1/templates/generic') {
+    if (!template || template.id === 'https://tropy.org/v1/templates/generic') {
       propMap = {
         id: "http://purl.org/dc/elements/1.1/identifier",
         label: "http://purl.org/dc/elements/1.1/title",
