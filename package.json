@@ -1,7 +1,7 @@
 {
   "name": "tropiiify",
   "productName": "tropiiify",
-  "version": "0.3.3-beta",
+  "version": "0.3.4-beta",
   "description": "A Tropy plugin for exporting IIIF collections",
   "icon": "icon.svg",
   "main": "index.js",
