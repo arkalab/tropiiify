@@ -24,7 +24,7 @@ class Resource {
 
     this.id
       && (
-        this.id = this.sanitizeString(this.id),
+        this.id = Resource.sanitizeString(this.id),
         this.path = path.join(this.options.output, this.id), //manifest filesystem path
         this.baseId = `${this.options.baseId.replace(/\/$/, '')}/${this.id}` //manifest URI
       )
