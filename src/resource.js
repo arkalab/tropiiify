@@ -115,7 +115,7 @@ class Resource {
       manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
-        canvas.addLabel(photo.label);
+        canvas.addLabel(photo.label || "");
         canvas.addThumbnail({
           id:
             `${this.baseId}/${photo.checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(photo.path) || '.jpg'}`,
