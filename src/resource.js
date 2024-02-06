@@ -6,6 +6,7 @@ const ns = (namespace) => (property) => `${namespace}${property}`;
 
 // Create an alias for the namespace
 const tropy = ns('https://tropy.org/v1/tropy#');
+const dc = ns('http://purl.org/dc/elements/1.1/')
 
 class Resource {
 
@@ -30,6 +31,7 @@ class Resource {
       )
 
     this.photo = this.extractValue(data, tropy('photo')).map((photo) => ({
+      label: this.extractValue(photo, dc('title')),
       checksum: this.extractValue(photo, tropy('checksum')),
       width: this.extractValue(photo, tropy('width')),
       height: this.extractValue(photo, tropy('height')),
@@ -105,6 +107,7 @@ class Resource {
   createCanvases(manifest, sizes) {
     for (let [canvasIndex, photo] of this.photo.entries()) {
       const { width: midWidth, height: midHeight } = sizes[canvasIndex].midsize
+      const { width: thumbWidth, height: thumbHeight } = sizes[canvasIndex].thumb
       const canvasId = `${this.baseId}/canvas/${canvasIndex + 1}` //0266-full-canvas-annotation/canvas-x
       const annPageId = `${canvasId}/annopage-1` //0266-full-canvas-annotation/canvas-x/annopage-1",
       const paintingAnnId = `${annPageId}/anno-1` //0266-full-canvas-annotation/canvas-x/annopage-1/anno-1
@@ -112,7 +115,17 @@ class Resource {
       manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
+        canvas.addLabel(photo.label);
+        canvas.addThumbnail({
+          id:
+            `${this.baseId}/${photo.checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(photo.path) || '.jpg'}`,
+          type: 'Image',
+          format: photo.mimetype,
+          width: thumbWidth,
+          height: thumbHeight,
+        });
         canvas.createAnnotationPage(annPageId, (annoPage) => {
+          
           annoPage.createAnnotation({
             id: paintingAnnId,
             type: 'Annotation',
