@@ -46,6 +46,8 @@ class TropiiifyPlugin {
         type: 'info'
       });
       return
+    } else {
+      this.createDirectory(this.options.output)
     }
 
     // Iterate over items, create manifest and write file
@@ -242,7 +244,6 @@ class TropiiifyPlugin {
     })
     if (output.length > 0) {
       output = path.join(output[0], 'iiif')
-      this.createDirectory(output)
       return output
     } else {
       return null
