@@ -68,8 +68,8 @@ class Resource {
         this.summary && manifest.addSummary(this.summary)
         this.rights && manifest.setRights(this.rights);
         this.requiredstatementValue && manifest.setRequiredStatement({
-          label: this.options.requiredStatementLabel,
-          value: `${this.options.requiredStatementText} ${this.assembleHTML('requiredstatementValue')}`.trim() //Remove eventual leading whitespace
+          label: {"none": [this.options.requiredStatementLabel]},
+          value: {"none": [`${this.options.requiredStatementText} ${this.assembleHTML('requiredstatementValue')}`.trim()]} //Remove eventual leading whitespace
         })
         manifest.setHomepage({
           id: this.homepageValue,
