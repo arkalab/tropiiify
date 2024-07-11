@@ -80,13 +80,13 @@ class Resource {
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({
           id:
-            `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(this.photo[0].path) || '.jpg'}`,
+            `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default.jpg`,
           type: 'Image',
-          format: this.photo[0].mimetype,
+          format: 'image/jpeg',
           width: thumbWidth,
           height: thumbHeight,
         });
-        this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props  
+        this.fillMetadata(manifest) //assigns all this.metadata{{Label}} props
         this.createCanvases(manifest, sizes)
       }
     )
@@ -118,14 +118,14 @@ class Resource {
         canvas.addLabel(photo.label || "");
         canvas.addThumbnail({
           id:
-            `${this.baseId}/${photo.checksum}/full/${thumbWidth},${thumbHeight}/0/default${path.extname(photo.path) || '.jpg'}`,
+            `${this.baseId}/${photo.checksum}/full/${thumbWidth},${thumbHeight}/0/default.jpg`,
           type: 'Image',
-          format: photo.mimetype,
+          format: 'image/jpeg',
           width: thumbWidth,
           height: thumbHeight,
         });
         canvas.createAnnotationPage(annPageId, (annoPage) => {
-          
+
           annoPage.createAnnotation({
             id: paintingAnnId,
             type: 'Annotation',

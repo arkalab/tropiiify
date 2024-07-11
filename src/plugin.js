@@ -36,7 +36,7 @@ class TropiiifyPlugin {
 
     // Map property URIs to template labels (that should be named according to the convention)
     const map = this.mapLabelsToIds(this.loadTemplate(this.options.itemTemplate))
-    
+
     const items = expanded.map((item) => new Resource(item, map, this.options));
     //console.log('items', items)
     const missingIds = !items.every(item => item['id']);
@@ -89,9 +89,9 @@ class TropiiifyPlugin {
             const newHeight = Math.round(height / ratio)
             collection.addThumbnail({
               id:
-                `${item.baseId}/${checksum}/full/${Math.round(newWidth)},${Math.round(newHeight)}/0/default${path.extname(imagePath) || '.jpg'}`,
+                `${item.baseId}/${checksum}/full/${Math.round(newWidth)},${Math.round(newHeight)}/0/default.jpg`,
               type: 'Image',
-              format: mimetype,
+              format: 'image/jpeg',
               width: newWidth,
               height: newHeight,
             })
@@ -157,7 +157,7 @@ class TropiiifyPlugin {
       });
 
       const thumbPromise = this.processImage(sharpInstance.clone(), 300, item, photo);
-      // If larger, resize image to 2000px on the long side 
+      // If larger, resize image to 2000px on the long side
       const midsizePromise = this.processImage(sharpInstance.clone(), Math.min(2000, (Math.max(photo.width, photo.height))), item, photo);
 
       // Wait for both thumbnail and midsize promises to resolve
