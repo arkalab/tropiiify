@@ -187,6 +187,7 @@ class TropiiifyPlugin {
       await new Promise((resolve, reject) => {
         sharpInstance
           .resize(maxDimension, maxDimension, { fit: 'inside' })
+          .jpeg()
           .toBuffer((err, data, info) => {
             if (err) {
               console.error('Error:', err);
