@@ -202,7 +202,7 @@ class TropiiifyPlugin {
                 'full',
                 `${width},${height}`,
                 '0',
-                `default${path.extname(photo.path) || '.jpg'}`
+                'default.jpg'
               );
               fs.promises.mkdir(path.dirname(destination), { recursive: true })
                 .then(() => fs.promises.writeFile(destination, data))
