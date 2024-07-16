@@ -83,24 +83,16 @@ class TropiiifyPlugin {
             manifest.addLabel(item.label);
           });
           if (index === 0) {
-            const {
-              path: imagePath,
-              checksum,
-              width,
-              height,
-              mimetype,
-            } = item.photo[0];
+            const { checksum, width, height } = item.photo[0];
             const ratio = Math.max(width, height) / 300;
             const newWidth = Math.round(width / ratio);
             const newHeight = Math.round(height / ratio);
             collection.addThumbnail({
               id: `${item.baseId}/${checksum}/full/${Math.round(
                 newWidth
-              )},${Math.round(newHeight)}/0/default${
-                path.extname(imagePath) || ".jpg"
-              }`,
+              )},${Math.round(newHeight)}/0/default.jpg`,
               type: "Image",
-              format: mimetype,
+              format: "image/jpeg",
               width: newWidth,
               height: newHeight,
             });
@@ -235,7 +227,7 @@ class TropiiifyPlugin {
               "full",
               `${width},${height}`,
               "0",
-              `default${path.extname(photo.path) || ".jpg"}`
+              "default.jpg"
             );
             fs.promises
               .mkdir(path.dirname(destination), { recursive: true })

@@ -95,13 +95,9 @@ class Resource {
         });
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({
-          id: `${this.baseId}/${
-            this.photo[0].checksum
-          }/full/${thumbWidth},${thumbHeight}/0/default${
-            path.extname(this.photo[0].path) || ".jpg"
-          }`,
+          id: `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default.jpg`,
           type: "Image",
-          format: this.photo[0].mimetype,
+          format: "image/jpeg",
           width: thumbWidth,
           height: thumbHeight,
         });
@@ -134,23 +130,15 @@ class Resource {
       const canvasId = `${this.baseId}/canvas/${canvasIndex + 1}`; //0266-full-canvas-annotation/canvas-x
       const annPageId = `${canvasId}/annopage-1`; //0266-full-canvas-annotation/canvas-x/annopage-1",
       const paintingAnnId = `${annPageId}/anno-1`; //0266-full-canvas-annotation/canvas-x/annopage-1/anno-1
-      const paintingBodyId = `${this.baseId}/${
-        photo.checksum
-      }/full/${midWidth},${midHeight}/0/default${
-        path.extname(photo.path) || ".jpg"
-      }`;
+      const paintingBodyId = `${this.baseId}/${photo.checksum}/full/${midWidth},${midHeight}/0/default.jpg`;
       manifest.createCanvas(canvasId, (canvas) => {
         canvas.width = photo.width;
         canvas.height = photo.height;
         canvas.addLabel(photo.label || "");
         canvas.addThumbnail({
-          id: `${this.baseId}/${
-            photo.checksum
-          }/full/${thumbWidth},${thumbHeight}/0/default${
-            path.extname(photo.path) || ".jpg"
-          }`,
+          id: `${this.baseId}/${photo.checksum}/full/${thumbWidth},${thumbHeight}/0/default.jpg`,
           type: "Image",
-          format: photo.mimetype,
+          format: "image/jpeg",
           width: thumbWidth,
           height: thumbHeight,
         });
@@ -162,7 +150,7 @@ class Resource {
             body: {
               id: paintingBodyId,
               type: "Image",
-              format: photo.mimetype,
+              format: "image/jpeg",
               width: midWidth,
               height: midHeight,
               service: [
