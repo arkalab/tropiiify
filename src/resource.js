@@ -87,12 +87,13 @@ class Resource {
               ],
             }, //Remove eventual leading whitespace
           });
-        manifest.setHomepage({
-          id: this.homepageValue,
-          type: "Text",
-          label: { none: [this.options.homepageLabel] }, //Falls back to default
-          format: "text/html",
-        });
+        this.homepageId &&
+          manifest.setHomepage({
+            id: this.homepageId,
+            type: "Text",
+            label: { none: [this.options.homepageLabel] }, //Falls back to default
+            format: "text/html",
+          });
         //props.latitude && props.longitude && manifest.addNavPlace(latitude, longitude)
         manifest.addThumbnail({
           id: `${this.baseId}/${this.photo[0].checksum}/full/${thumbWidth},${thumbHeight}/0/default.jpg`,
