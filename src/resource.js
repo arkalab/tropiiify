@@ -22,6 +22,8 @@ class Resource {
       this[property] = this.extractValue(data, map[property]);
     }
 
+    this.tags = data?.[tropy("tag")].map((tag) => tag["@value"]) || [];
+
     this.id &&
       ((this.id = Resource.sanitizeString(this.id)),
       (this.path = path.join(this.options.output, this.id)), //manifest filesystem path
@@ -121,6 +123,10 @@ class Resource {
         );
       }
     }
+    this.tags.length > 0 && this.options.tagsLabel && manifest.addMetadata(
+      { none: [this.options.tagsLabel] },
+      { none: this.tags }
+    );
   }
 
   createCanvases(manifest, sizes) {

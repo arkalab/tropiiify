@@ -52,6 +52,12 @@
       "hint": "The label to use for the manifests Homepage section"
     },
     {
+      "field": "tagsLabel",
+      "label": "Tags Label",
+      "default": "Tags",
+      "hint": "If present, Tropy tags will be sent to a metadata element with this label. Leave blank if you don't want to include tags."
+    },
+    {
       "field": "requiredStatementLabel",
       "label": "Required Statement Label",
       "default": "Attribution",
