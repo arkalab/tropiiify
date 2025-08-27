@@ -22,7 +22,7 @@ class Resource {
       this[property] = this.extractValue(data, map[property]);
     }
 
-    this.tags = data?.[tropy("tag")].map((tag) => tag["@value"]) || [];
+    this.tags = data?.[tropy("tag")]?.map((tag) => tag["@value"]) || [];
 
     this.id &&
       ((this.id = Resource.sanitizeString(this.id)),
